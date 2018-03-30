@@ -1,0 +1,16 @@
+{
+    "name": "kolserdav/templater",
+    "description": "Simple templater",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "kolserdav",
+            "email": "serega12101983@gmail.com"
+        }
+    ],
+  "autoload" : {
+    "psr-4": {"Avir\\Templater\\" : "src/"}
+  },
+    "require": {}
+}
