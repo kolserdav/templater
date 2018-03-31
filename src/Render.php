@@ -45,11 +45,16 @@ class Render extends Templater
             $dataTwo = $data;
         }
 
+            //Replace {{value}} on 'echo $value' in patch files
+        $dataTwo = $bg->prepareCurly($argv, $dataTwo);
+
             //Get custom cache catalog
         $cacheCatalog = $bg->setCacheCatalog($this->root);
 
             //Get name file of cache and operation with him
         $fileName = $this->getFileName($cacheCatalog, $dataTwo);
+
+            //Checking the cache file
         if (!file_exists($fileName)) {
             copy($this->tempFile, $fileName);
             $res = fopen($fileName, 'w');

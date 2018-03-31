@@ -15,12 +15,21 @@ class Background extends Config
     /**
      * Filter template file, and replace {{ value }} on $argv['args']['value']
      * @param $argv
+     * @param $dataTwo
      * @return bool|mixed|string
      * @throws
      */
-    public function prepareCurly(array $argv)
+    public function prepareCurly(array $argv, $dataTwo = null)
     {
-        $data = $this->getDataTemplate($argv);
+            //Checking second enter for initial {{value}} in patch files
+        if ($dataTwo != null){
+            $data = $dataTwo;
+        }
+        else {
+            $data = $this->getDataTemplate($argv);
+        }
+
+            //Checking setting file template path
         if (!$data){
             try {
                 $message = 'Error get content. Please check your template-file path settings';
@@ -31,10 +40,12 @@ class Background extends Config
                 exit();
             }
         }
+            //Search and replace {{value}}
         $filterCurly = preg_match_all('%\{\{.?\w+.?}\}%', $data, $res);
         if ($filterCurly){
             $count = count($res[0]);
             global $newData;
+            $newData = null;
             for ($i = 0; $i < $count; $i ++){
                 $nameVar = trim(str_replace(['{', '}'], '',$res[0][$i]));
                 $var = $argv['args'][$nameVar];
@@ -45,7 +56,9 @@ class Background extends Config
                     $newData = str_replace($res[0][$i], $var, $newData);
                 }
             }
-            return $newData;
+            $result = $newData;
+            unset($newData);
+            return $result;
         }
         else {
             return $data;
@@ -67,6 +80,7 @@ class Background extends Config
         if ($filterEt){
             $count = count($res[0]);
             global $newData;
+            $newData = null;
             for ($i = 0; $i < $count; $i ++){
                 @$dataF = file_get_contents($argv['viewDir'].$file[$res[0][$i]]);
                 if ($newData == null) {
@@ -82,10 +96,13 @@ class Background extends Config
             $filterFor = preg_match_all($pattern, $newData, $res);
             if ($filterFor) {
                 $result = $this->replaceFor($newData);
+                unset($newData);
                 return $this->readVariableArrays($result, $argv['args']);
             }
             else {
-                return $newData;
+                $result = $newData;
+                unset($newData);
+                return $result;
             }
         }
         else {
@@ -112,7 +129,9 @@ class Background extends Config
                 continue;
             }
         }
-        return $this->saveVarArr($data, $variables, $args);
+        $vars = $variables;
+        unset($variables);
+        return $this->saveVarArr($data, $vars, $args);
     }
 
     /**
@@ -143,6 +162,7 @@ class Background extends Config
             unset($vals);
         }
         $saveField = "<?\n$vars ?>\n";
+        unset($vars);
         return $saveField.$data;
     }
 
@@ -181,7 +201,9 @@ class Background extends Config
                     $result = str_replace([$m[0][$i]], $script, $result);
                 }
             }
-            return $result;
+            $res = $result;
+            unset($result);
+            return $res;
         }
         else {
             return $data;
