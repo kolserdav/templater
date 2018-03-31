@@ -24,9 +24,9 @@ At the moment the following structures are supported
 {% endfor  %}
 ``` 
 
-<aside class="notice">
-Construction '{% for in %}' only works in patch files.
-</aside>  
+
+**_`Construction '{% for in %}' only works in patch files.`_**
+
 
 _Using_
 
