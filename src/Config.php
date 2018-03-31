@@ -11,8 +11,15 @@ namespace Avir\Templater;
 
 class Config
 {
+    /**
+     * Cache catalog path
+     * @var string
+     */
     public static $cache;
 
+    /**
+     * @param array $args
+     */
     public function setConfig(array $args = array())
     {
         static::$cache = $args['cache'];

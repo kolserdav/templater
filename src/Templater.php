@@ -30,12 +30,16 @@ abstract class Templater
     public $tempFile;
 
     /**
+     * Root the project
+     * @var string
+     */
+    public $root;
+
+    /**
      * Templater constructor.
      * @param $temp_dir
      * @param $temp_file
      */
-    public $root;
-
     public function __construct($temp_dir, $temp_file)
     {
         $this->root = $this->getRoot();

@@ -16,61 +16,76 @@ class Background extends Config
      * Filter template file, and replace {{ value }} on $argv['args']['value']
      * @param $argv
      * @return bool|mixed|string
+     * @throws
      */
     public function prepareCurly(array $argv)
     {
         $data = $this->getDataTemplate($argv);
+        if (!$data){
+            try {
+                $message = 'Error get content. Please check your template-file path settings';
+                throw new \Exception($message);
+            }
+            catch (\Exception $e){
+                echo $e->getMessage();
+                exit();
+            }
+        }
         $filterCurly = preg_match_all('%\{\{.?\w+.?}\}%', $data, $res);
         if ($filterCurly){
             $count = count($res[0]);
-            global $newData1;
+            global $newData;
             for ($i = 0; $i < $count; $i ++){
-                $nameVariable = trim(str_replace(['{', '}'], '',$res[0][$i]));
-                $variable = $argv['args'][$nameVariable];
-                if ($newData1 == null) {
-                    $newData1 = str_replace($res[0][$i], $variable, $data);
+                $nameVar = trim(str_replace(['{', '}'], '',$res[0][$i]));
+                $var = $argv['args'][$nameVar];
+                if ($newData == null) {
+                    $newData = str_replace($res[0][$i], $var, $data);
                 }
                 else {
-                    $newData1 = str_replace($res[0][$i], $variable, $newData1);
+                    $newData = str_replace($res[0][$i], $var, $newData);
                 }
             }
-            return $newData1;
+            return $newData;
         }
         else {
-            $newData = $data;
-            return $newData;
+            return $data;
         }
     }
 
     /**
-     * Replace \@value on $file['value'] content
-     * @param $data
-     * @param $file
-     * @param $argv
-     * @return mixed
+     * Replace 'field' on $file['value'] content
+     * And prepare 'for in' constructions
+     * @param $data string
+     * @param $file array
+     * @param $argv array
+     * @return string
      */
-    public function prepareEt($data, $file, $argv)
+    public function prepareEtAndFor(string $data, array $file, array $argv): string
     {
+            //Processes on 'field' replace
         $filterEt = preg_match_all('%\@\w+%', $data, $res);
         if ($filterEt){
             $count = count($res[0]);
-            global $newData2;
+            global $newData;
             for ($i = 0; $i < $count; $i ++){
                 @$dataF = file_get_contents($argv['viewDir'].$file[$res[0][$i]]);
-                if ($newData2 == null) {
-                    $newData2 = str_replace($res[0][$i], $dataF, $data);
+                if ($newData == null) {
+                    $newData = str_replace($res[0][$i], $dataF, $data);
                 }
                 else {
-                    $newData2 = str_replace($res[0][$i], $dataF, $newData2);
+                    $newData = str_replace($res[0][$i], $dataF, $newData);
                 }
             }
-            $filterFor = preg_match_all('#\{\%.*for.+in.*\%\}.*\n?\{\{.*\}\}.*\n?\{\%.*endfor.*\%\}#', $newData2, $res);
+            $pattern = '#\{\%.*for.+in.*\%\}.*\n?\{\{.*\}\}.*\n?\{\%.*endfor.*\%\}#';
+
+                //Processes on {% for in %} replace
+            $filterFor = preg_match_all($pattern, $newData, $res);
             if ($filterFor) {
-                $result = $this->replaceFor($newData2);
-                return $this->writeVariableArrays($result, $argv['args']);
+                $result = $this->replaceFor($newData);
+                return $this->readVariableArrays($result, $argv['args']);
             }
             else {
-                return $newData2;
+                return $newData;
             }
         }
         else {
@@ -78,7 +93,13 @@ class Background extends Config
         }
     }
 
-    public function writeVariableArrays($data, $args)
+    /**
+     * Read sent params with (names key array) for 'for in'
+     * @param $data
+     * @param $args
+     * @return string
+     */
+    public function readVariableArrays(string $data, array $args): string
     {
         $keys = array_keys($args);
         $count = count($keys);
@@ -94,6 +115,13 @@ class Background extends Config
         return $this->saveVarArr($data, $variables, $args);
     }
 
+    /**
+     * Write appointment variables expression it the file-assembly top;
+     * @param string $data
+     * @param array $variables
+     * @param array $args
+     * @return string
+     */
     public function saveVarArr(string $data, array $variables, array $args):string
     {
         global $vars, $vals;
@@ -118,6 +146,10 @@ class Background extends Config
         return $saveField.$data;
     }
 
+    /**
+     * @param $root
+     * @return string
+     */
     public function setCacheCatalog($root)
     {
         if (parent::$cache){
@@ -128,7 +160,11 @@ class Background extends Config
         }
     }
 
-    public function replaceFor($data)
+    /**
+     * @param $data string
+     * @return string
+     */
+    public function replaceFor(string $data): string
     {
         if (preg_match_all('#\{\%.*for.+in.*\%\}.*\n?\{\{.*\}\}.*\n?\{\%.*endfor.*\%\}#', $data, $m)){
             global $result;
@@ -136,8 +172,8 @@ class Background extends Config
             $count = count($m[0]);
             for ($i = 0; $i < $count; $i ++) {
                 preg_match('#in.?[\w]*#', $m[0][$i], $m1);
-                $nameVariable = trim(str_replace('in', '', $m1[0]));
-                $script = '<?'." foreach (\$$nameVariable as $value){\n\t echo $value; \n\t}\n".'?>';
+                $nameVar = trim(str_replace('in', '', $m1[0]));
+                $script = '<?'." foreach (\$$nameVar as $value){\n\t echo $value; \n\t}\n".'?>';
                 if ($result == null) {
                     $result = str_replace([$m[0][$i]], $script, $data);
                 }
@@ -153,11 +189,11 @@ class Background extends Config
     }
 
     /**
-     * @param $argv
+     * @param $argv array
      * @return bool|string
      */
-    public function getDataTemplate($argv)
+    public function getDataTemplate(array $argv)
     {
-        return file_get_contents($argv['tempFile']);
+        return @file_get_contents($argv['tempFile']);
     }
 }
