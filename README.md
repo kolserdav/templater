@@ -25,7 +25,7 @@ At the moment the following structures are supported
 ``` 
 
 
-**_`Construction '{% for in %}' only works in patch files.`_**
+**_`Construction '@field' only works in template file.`_**
 
 
 _Using_
