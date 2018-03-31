@@ -36,6 +36,8 @@ or controller file...
 Optional (if you need the cache of pages) 
 
 ```php
+use Avir\Templater\Config;
+
 $config = new Config();
 $config->setConfig([
     'cache' => '/path/cache/catalog' //default : false
@@ -44,6 +46,8 @@ $config->setConfig([
 Require (to include template)
 
 ```php
+use Avir\Templater\Render;
+
 $obj = new Render('/path/template/catalog', '/template.file.php'); 
 $obj->render(
     [
