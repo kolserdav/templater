@@ -55,7 +55,7 @@ abstract class Templater
      */
     public function getRoot(): string
     {
-        preg_match("%.*templater%",dirname(__DIR__),$m);
-        return preg_filter('%.{1}templater%','',$m[0]);
+        preg_match("%.*vendor%",dirname(__DIR__),$m);
+        return preg_filter('%.{1}vendor%','',$m[0]);
     }
 }
