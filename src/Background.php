@@ -13,12 +13,11 @@ class Background extends Config
 {
 
     /**
-     * Filter template file, and replace {{ value }} on $args['value']
-     * @param array $args
+     * Filter template file, and replace {{ value }} on $argv['args']['value']
      * @param $argv
      * @return bool|mixed|string
      */
-    public function prepareCurly(array $args, $argv)
+    public function prepareCurly(array $argv)
     {
         $data = $this->getDataTemplate($argv);
         $filterCurly = preg_match_all('%\{\{.?\w+.?}\}%', $data, $res);
@@ -27,7 +26,7 @@ class Background extends Config
             global $newData1;
             for ($i = 0; $i < $count; $i ++){
                 $nameVariable = trim(str_replace(['{', '}'], '',$res[0][$i]));
-                $variable = $args[$nameVariable];
+                $variable = $argv['args'][$nameVariable];
                 if ($newData1 == null) {
                     $newData1 = str_replace($res[0][$i], $variable, $data);
                 }
@@ -67,7 +66,8 @@ class Background extends Config
             }
             $filterFor = preg_match_all('#\{\%.*for.+in.*\%\}.*\n?\{\{.*\}\}.*\n?\{\%.*endfor.*\%\}#', $newData2, $res);
             if ($filterFor) {
-                return $this->replaceFor($newData2);
+                $result = $this->replaceFor($newData2);
+                return $this->writeVariableArrays($result, $argv['args']);
             }
             else {
                 return $newData2;
@@ -77,47 +77,46 @@ class Background extends Config
             return $data;
         }
     }
-    public function prepareFor($data, $argv, $file)
-    {
-        $filterFor = preg_match_all('#\{\%.*for.+in.*\%\}.*\n?\{\{.*\}\}.*\n?\{\%.*endfor.*\%\}#', $data);
-        if ($filterFor) {
-            preg_match_all('%\@\w+%', $data, $res);
-            $count = count($res[0]);
-            global $newData3;
-            for ($i = 0; $i < $count; $i ++){
-                @$dataF = file_get_contents($argv['viewDir'].$file[$res[0][$i]]);
-                $dataF = $this->replaceFor($dataF);
-                if ($newData3 == null) {
-                    $newData3 = str_replace($res[0][$i], $dataF, $data);
-                }
-                else {
-                    $newData3 = str_replace($res[0][$i], $dataF, $newData3);
-                }
-            }
-            return $newData3;
-        }
-        else {
-            return $data;
-        }
 
-    }
-
-    /*public function writeFor($data, $argv, $file)
+    public function writeVariableArrays($data, $args)
     {
-        $keys = array_keys($argv['args']);
-        global $keysFor;
+        $keys = array_keys($args);
         $count = count($keys);
-        for ($i = 0, $keysFor = []; $i < $count; $i ++ ) {
-            $arrayFor = preg_match('%for_.*%', $keys[$i], $m1);
-            if ($arrayFor) {
-                $keysFor[] = $m1[0];
+        global $variables;
+        for ($i = 0; $i < $count; $i ++) {
+            if (preg_match('%for\_[\w]*%', $keys[$i], $m)) {
+                $variables[] = $m[0];
             }
             else {
                 continue;
             }
         }
-        return $this->prepareFor($data, $argv, $file);
-    }*/
+        return $this->saveVarArr($data, $variables, $args);
+    }
+
+    public function saveVarArr(string $data, array $variables, array $args):string
+    {
+        global $vars, $vals;
+        $count = count($variables);
+        for ($i = 0; $i < $count; $i ++) {
+            $key = $variables[$i];
+            $val = str_replace('for_', '', $key );
+            foreach ($args[$key] as $value){
+                if (gettype($value) == 'string'){
+                    $vals .= "'$value',";
+                }
+                else {
+                    $vals .= "$value,";
+                }
+            }
+            $vals = trim($vals, ',');
+            $vals = "[$vals]";
+            $vars .= "\$$val = $vals;\n";
+            unset($vals);
+        }
+        $saveField = "<?\n$vars ?>\n";
+        return $saveField.$data;
+    }
 
     public function setCacheCatalog($root)
     {
@@ -138,7 +137,7 @@ class Background extends Config
             for ($i = 0; $i < $count; $i ++) {
                 preg_match('#in.?[\w]*#', $m[0][$i], $m1);
                 $nameVariable = trim(str_replace('in', '', $m1[0]));
-                $script = '<?'."foreach (\$$nameVariable as $value){echo $value;}".'?>';
+                $script = '<?'." foreach (\$$nameVariable as $value){\n\t echo $value; \n\t}\n".'?>';
                 if ($result == null) {
                     $result = str_replace([$m[0][$i]], $script, $data);
                 }

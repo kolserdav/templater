@@ -19,7 +19,7 @@ class Render extends Templater
             'viewDir' => $this->viewDir,
             'args' => $args
         ];
-        $data = $bg->prepareCurly($args, $argv);
+        $data = $bg->prepareCurly($argv);
         $dataTwo = $bg->prepareEt($data, $files, $argv);
         $cacheCatalog = $bg->setCacheCatalog($this->root);
         $fileName = $this->getFileName($cacheCatalog, $dataTwo);
@@ -31,9 +31,8 @@ class Render extends Templater
         }
         require $fileName;
         if ($cacheCatalog == '.') {
-            //unlink($fileName);
+            unlink($fileName);
         }
-        //print_r($r[0]);
     }
 
     public function getFileName($cache_catalog, $file_cache)
