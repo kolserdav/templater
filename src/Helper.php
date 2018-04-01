@@ -27,10 +27,13 @@ class Helper
      */
     public static function filterComment(array $tags)
     {
-        return array_filter($tags,  function ($var)
+        $noKeys = array_filter($tags,  function ($var)
         {
             return (!preg_match('%\#%',$var));
         });
+        $count = count($noKeys);
+        $arrayKeys = range(0, $count - 1);
+        return array_combine($arrayKeys, $noKeys);
 
     }
     public static function searchFor($data)
