@@ -25,7 +25,8 @@ At the moment the following structures are supported
 ``` 
 
 
-**_`If you use control characters as '@' in the comments to your template files, then escape them with '#'`_**
+**_`If you use control characters with transmitted variables as '@some' in the comments to your template files,
+ then escape them as '#@some'`_**
 
 
 _Using_
