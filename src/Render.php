@@ -24,15 +24,15 @@ class Render extends Templater
         $argv = [
             'tempFile' => $this->tempFile,
             'viewDir' => $this->viewDir,
-            'args' => $args
+            'files' => $files
         ];
-
+        $args = array_merge($argv, $args);
             //Get first data with replace {{values}} on 'echo $values;'
         if (!empty($args)){
-            $data = $bg->prepareCurly($argv);
+            $data = $bg->prepareCurly($args);
         }
         else {
-            $data = $bg->getDataTemplate($argv);
+            $data = $bg->getDataTemplate($args);
         }
 
             /**
@@ -40,16 +40,16 @@ class Render extends Templater
              * And replace {% for in block %} on foreach(){} construction
              */
         if (!empty($args) || !empty($files)){
-            $dataTwo = $bg->prepareEtAndFor($data, $files, $argv);
+            $dataTwo = $bg->prepareEtAndFor($data, $args);
         }
         else {
             $dataTwo = $data;
         }
 
             //Replace {{value}} on 'echo $value' in patch files
-        $dataTwo = $bg->prepareCurly($argv, $dataTwo);
+        $dataTwo = $bg->prepareCurly($args, $dataTwo);
 
-        $dataTwo = $bg->replaceEt($dataTwo, $argv['viewDir'], $files);
+        $dataTwo = $bg->replaceEt($dataTwo, $args);
 
             //Get custom cache catalog
         $cacheCatalog = $bg->setCacheCatalog($this->root);

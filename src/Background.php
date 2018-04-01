@@ -14,19 +14,19 @@ class Background extends Config
 
     /**
      * Filter template file, and replace {{ value }} on $argv['args']['value']
-     * @param $argv
+     * @param $args array
      * @param $dataTwo
      * @return bool|mixed|string
      * @throws
      */
-    public function prepareCurly(array $argv, $dataTwo = null)
+    public function prepareCurly(array $args, $dataTwo = null)
     {
             //Checking second enter for initial {{value}} in patch files
         if ($dataTwo != null){
             $data = $dataTwo;
         }
         else {
-            $data = $this->getDataTemplate($argv);
+            $data = $this->getDataTemplate($args);
         }
 
             //Checking setting file template path
@@ -41,24 +41,12 @@ class Background extends Config
             }
         }
             //Search and replace {{value}}
-        $filterCurly = preg_match_all('%\{\{.?\w+.?}\}%', $data, $res);
-        if ($filterCurly){
-            $count = count($res[0]);
-            global $newData;
-            $newData = null;
-            for ($i = 0; $i < $count; $i ++){
-                $nameVar = trim(str_replace(['{', '}'], '',$res[0][$i]));
-                $var = $argv['args'][$nameVar];
-                if ($newData == null) {
-                    $newData = str_replace($res[0][$i], $var, $data);
-                }
-                else {
-                    $newData = str_replace($res[0][$i], $var, $newData);
-                }
-            }
-            $result = $newData;
-            unset($newData);
-            return $result;
+        $res = Helper::filterCurly($data);
+        if ($res){
+            return $this->replaceVars($res, $data, $args,
+                function ($res, $i, $args){
+                    return Helper::delCurly($res, $i, $args);
+                });
         }
         else {
             return $data;
@@ -73,22 +61,19 @@ class Background extends Config
      * @param $argv array
      * @return string
      */
-    public function prepareEtAndFor(string $data, array $file, array $argv): string
+    public function prepareEtAndFor(string $data, array $args): string
     {
             //Processes on 'field' replace
-       $newData = $this->replaceEt($data, $argv['viewDir'], $file);
+       $newData = $this->replaceEt($data, $args);
 
             //Processes on {% for in %} replace
         $filterFor = Helper::searchFor($newData);
         if ($filterFor) {
-            $result = $this->replaceFor($newData);
-            unset($newData);
-            return $this->readVariableArrays($result, $argv['args']);
+            $result = $this->replaceFor($newData, $args);
+            return $this->readVariableArrays($result, $args);
         }
         else {
-            $result = $newData;
-            unset($newData);
-            return $result;
+            return $newData;
         }
 
     }
@@ -167,25 +152,14 @@ class Background extends Config
      * @param $data string
      * @return string
      */
-    public function replaceFor(string $data): string
+    public function replaceFor(string $data, $args): string
     {
         if ($res = Helper::searchFor($data)){
-            global $result;
-            $count = count($res[0]);
-            for ($i = 0; $i < $count; $i ++) {
-                preg_match('#in.?[\w]*#', $res[0][$i], $m);
-                $nameVar = trim(str_replace('in', '', $m[0]));
-                $script = Helper::getScript($nameVar);
-                if ($result == null) {
-                    $result = str_replace([$res[0][$i]], $script, $data);
-                }
-                else {
-                    $result = str_replace([$res[0][$i]], $script, $result);
-                }
-            }
-            $res = $result;
-            unset($result);
-            return $res;
+            return $this->replaceVars($res[0], $data, $args, function($res, $i){
+                $nameVar = Helper::getNameVarDelIn($res, $i);
+                return Helper::getScript($nameVar);
+            });
+
         }
         else {
             return $data;
@@ -196,33 +170,36 @@ class Background extends Config
      * @param $argv array
      * @return bool|string
      */
-    public function getDataTemplate(array $argv)
+    public function getDataTemplate(array $args)
     {
-        return @file_get_contents($argv['tempFile']);
+        return @file_get_contents($args['tempFile']);
     }
 
-    public function replaceEt(string $data, string $view_dir, array $files)
+    public function replaceEt(string $data, array $args)
     {
         $search = Helper::searchEt($data);
         $res = Helper::filterComment($search[0]);
         if ($res) {
-            return $this->replaceVars($res, $data, $view_dir, $files);
+            return $this->replaceVars($res, $data, $args,
+                function ($res, $i, $args){
+                return Helper::getPatch($res, $i, $args);
+            });
         }
-        else{
+        else {
             return $data;
         }
     }
-    public function replaceVars($res, $data, $view_dir, $files, $dataC = '')
+    public function replaceVars($res, $data, $args, $dataC)
     {
         $count = count($res);
         global $newData;
         $newData = null;
         for ($i = 0; $i < $count; $i++) {
-            if (!empty($dataC)){
-                $dataF = $dataC;
+            if (is_callable($dataC)){
+                $dataF = $dataC($res,  $i, $args);
             }
-            else {
-                $dataF = Helper::getPatch($view_dir, $files, $res, $i);
+            else{
+                $dataF = $dataC;
             }
             if ($newData == null) {
                 $newData = str_replace($res[$i], $dataF, $data);
