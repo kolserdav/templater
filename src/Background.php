@@ -76,38 +76,21 @@ class Background extends Config
     public function prepareEtAndFor(string $data, array $file, array $argv): string
     {
             //Processes on 'field' replace
-        $filterEt = preg_match_all('%\@\w+%', $data, $res);
-        if ($filterEt){
-            $count = count($res[0]);
-            global $newData;
-            $newData = null;
-            for ($i = 0; $i < $count; $i ++){
-                @$dataF = file_get_contents($argv['viewDir'].$file[$res[0][$i]]);
-                if ($newData == null) {
-                    $newData = str_replace($res[0][$i], $dataF, $data);
-                }
-                else {
-                    $newData = str_replace($res[0][$i], $dataF, $newData);
-                }
-            }
-            $pattern = '#\{\%.*for.+in.*\%\}.*\n?\{\{.*\}\}.*\n?\{\%.*endfor.*\%\}#';
+       $newData = $this->replaceEt($data, $argv['viewDir'], $file);
 
-                //Processes on {% for in %} replace
-            $filterFor = preg_match_all($pattern, $newData, $res);
-            if ($filterFor) {
-                $result = $this->replaceFor($newData);
-                unset($newData);
-                return $this->readVariableArrays($result, $argv['args']);
-            }
-            else {
-                $result = $newData;
-                unset($newData);
-                return $result;
-            }
+            //Processes on {% for in %} replace
+        $filterFor = Helper::searchFor($newData);
+        if ($filterFor) {
+            $result = $this->replaceFor($newData);
+            unset($newData);
+            return $this->readVariableArrays($result, $argv['args']);
         }
         else {
-            return $data;
+            $result = $newData;
+            unset($newData);
+            return $result;
         }
+
     }
 
     /**
@@ -186,19 +169,18 @@ class Background extends Config
      */
     public function replaceFor(string $data): string
     {
-        if (preg_match_all('#\{\%.*for.+in.*\%\}.*\n?\{\{.*\}\}.*\n?\{\%.*endfor.*\%\}#', $data, $m)){
+        if ($res = Helper::searchFor($data)){
             global $result;
-            $value = "\$value";
-            $count = count($m[0]);
+            $count = count($res[0]);
             for ($i = 0; $i < $count; $i ++) {
-                preg_match('#in.?[\w]*#', $m[0][$i], $m1);
-                $nameVar = trim(str_replace('in', '', $m1[0]));
-                $script = '<?'." foreach (\$$nameVar as $value){\n\t echo $value; \n\t}\n".'?>';
+                preg_match('#in.?[\w]*#', $res[0][$i], $m);
+                $nameVar = trim(str_replace('in', '', $m[0]));
+                $script = Helper::getScript($nameVar);
                 if ($result == null) {
-                    $result = str_replace([$m[0][$i]], $script, $data);
+                    $result = str_replace([$res[0][$i]], $script, $data);
                 }
                 else {
-                    $result = str_replace([$m[0][$i]], $script, $result);
+                    $result = str_replace([$res[0][$i]], $script, $result);
                 }
             }
             $res = $result;
@@ -217,5 +199,39 @@ class Background extends Config
     public function getDataTemplate(array $argv)
     {
         return @file_get_contents($argv['tempFile']);
+    }
+
+    public function replaceEt(string $data, string $view_dir, array $files)
+    {
+        $search = Helper::searchEt($data);
+        $res = Helper::filterComment($search[0]);
+        if ($res) {
+            return $this->replaceVars($res, $data, $view_dir, $files);
+        }
+        else{
+            return $data;
+        }
+    }
+    public function replaceVars($res, $data, $view_dir, $files, $dataC = '')
+    {
+        $count = count($res);
+        global $newData;
+        $newData = null;
+        for ($i = 0; $i < $count; $i++) {
+            if (!empty($dataC)){
+                $dataF = $dataC;
+            }
+            else {
+                $dataF = Helper::getPatch($view_dir, $files, $res, $i);
+            }
+            if ($newData == null) {
+                $newData = str_replace($res[$i], $dataF, $data);
+            } else {
+                $newData = str_replace($res[$i], $dataF, $newData);
+            }
+        }
+        $result = $newData;
+        unset($newData);
+        return $result;
     }
 }

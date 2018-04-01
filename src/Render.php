@@ -8,6 +8,7 @@
 
 namespace Avir\Templater;
 
+use Avir\Templater\Helper;
 
 class Render extends Templater
 {
@@ -48,6 +49,8 @@ class Render extends Templater
             //Replace {{value}} on 'echo $value' in patch files
         $dataTwo = $bg->prepareCurly($argv, $dataTwo);
 
+        $dataTwo = $bg->replaceEt($dataTwo, $argv['viewDir'], $files);
+
             //Get custom cache catalog
         $cacheCatalog = $bg->setCacheCatalog($this->root);
 
@@ -70,6 +73,7 @@ class Render extends Templater
         }
         return true;
     }
+
 
     /**
      * @param $cache_catalog string
