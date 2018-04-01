@@ -52,15 +52,18 @@ use Avir\Templater\Render;
 $obj = new Render('/path/template/catalog', '/template.file.php'); 
 $obj->render(
     [
-        'first_variabe' => 'string', //{{ keys }} in patch files
+        'first_variabe' => 'string', //{{ key }} 
         'second_variable' => 111,
         'for_array1' => [1,2,3,4], //arrays need have 'for_' after
         'for_array2' => [4,3,2,1]
     ],
     [
         '@example_field1' => 'patch.file.html', //patches repository /template-catalog/views
-        '@example_field2' => 'path/patch.file.html' //patches repository /template-catalogviews/path
+        '@example_field2' => 'path/patch.file.html' //patches repository /template-catalog/views/path
         ]);
 ```
+
+
+It works.
 
 
