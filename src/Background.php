@@ -11,6 +11,47 @@ namespace Avir\Templater;
 
 class Background extends Config
 {
+    /**
+     * Replace 'field' on $file['value'] content
+     * And prepare 'for in' constructions
+     * @param $data string
+     * @param $args array
+     * @return string
+     */
+    public function prepareEt(array $args, string $data): string
+    {
+
+        if (!Helper::searchEt($data)){
+            return $data;
+        }
+        else {
+
+                //Processes on 'field' replace
+            $newData = $this->replaceEt($data, $args);
+
+            return $this->prepareEt($args, $newData);
+        }
+    }
+
+    /**
+     * Replace '@'field on file.patch content
+     * @param string $data
+     * @param array $args
+     * @return mixed|null|string
+     */
+    public function replaceEt(string $data, array $args)
+    {
+        $res = Helper::searchEt($data);
+        if (Helper::searchEt($data)) {
+            return Helper::replaceVars($res, $data, $args,
+                function ($res, $i, $args){
+                    return Helper::getPatch($res, $i, $args);
+                });
+        }
+        else {
+            return $data;
+        }
+    }
 
     /**
      * Filter template file, and replace {{ value }} on $argv['args']['value']
@@ -19,31 +60,14 @@ class Background extends Config
      * @return bool|mixed|string
      * @throws
      */
-    public function prepareCurly(array $args, $dataTwo = null)
+    public function prepareCurly(array $args, string $dataTwo)
     {
-            //Checking second enter for initial {{value}} in patch files
-        if ($dataTwo != null){
-            $data = $dataTwo;
-        }
-        else {
-            $data = $this->getDataTemplate($args);
-        }
+        $data = $this->getData($args, $dataTwo);
 
-            //Checking setting file template path
-        if (!$data){
-            try {
-                $message = 'Error get content. Please check your template-file path settings';
-                throw new \Exception($message);
-            }
-            catch (\Exception $e){
-                echo $e->getMessage();
-                exit();
-            }
-        }
             //Search and replace {{value}}
         $res = Helper::filterCurly($data);
-        if ($res){
-            return $this->replaceVars($res, $data, $args,
+        if (!empty($res)){
+            return Helper::replaceVars($res, $data, $args,
                 function ($res, $i, $args){
                     return Helper::delCurly($res, $i, $args);
                 });
@@ -53,19 +77,8 @@ class Background extends Config
         }
     }
 
-    /**
-     * Replace 'field' on $file['value'] content
-     * And prepare 'for in' constructions
-     * @param $data string
-     * @param $file array
-     * @param $argv array
-     * @return string
-     */
-    public function prepareEtAndFor(string $data, array $args): string
+    public function prepareFor($args, $newData)
     {
-            //Processes on 'field' replace
-       $newData = $this->replaceEt($data, $args);
-
             //Processes on {% for in %} replace
         $filterFor = Helper::searchFor($newData);
         if ($filterFor) {
@@ -75,16 +88,34 @@ class Background extends Config
         else {
             return $newData;
         }
+    }
 
+    /**
+     * @param $data string
+     * @param $args array
+     * @return string
+     */
+    public function replaceFor(string $data, $args): string
+    {
+        if ($res = Helper::searchFor($data)){
+            return Helper::replaceVars($res[0], $data, $args, function($res, $i){
+                $nameVar = Helper::getNameVarDelIn($res, $i);
+                return Helper::getScript($nameVar);
+            });
+
+        }
+        else {
+            return $data;
+        }
     }
 
     /**
      * Read sent params with (names key array) for 'for in'
-     * @param $data
-     * @param $args
+     * @param string $data
+     * @param array $args
      * @return string
      */
-    public function readVariableArrays(string $data, array $args): string
+    private function readVariableArrays(string $data, array $args): string
     {
         $keys = array_keys($args);
         $count = count($keys);
@@ -109,7 +140,7 @@ class Background extends Config
      * @param array $args
      * @return string
      */
-    public function saveVarArr(string $data, array $variables, array $args):string
+    private function saveVarArr(string $data, array $variables, array $args):string
     {
         global $vars, $vals;
         $count = count($variables);
@@ -135,10 +166,10 @@ class Background extends Config
     }
 
     /**
-     * @param $root
+     * @param string $root
      * @return string
      */
-    public function setCacheCatalog($root)
+    public function setCacheCatalog(string $root): string
     {
         if (parent::$cache){
             return $root.'/'.parent::$cache;
@@ -149,66 +180,31 @@ class Background extends Config
     }
 
     /**
-     * @param $data string
-     * @return string
+     * @param $args
+     * @param null $dataTwo
+     * @return bool|null|string
      */
-    public function replaceFor(string $data, $args): string
+    public function getData(array $args, $dataTwo = null)
     {
-        if ($res = Helper::searchFor($data)){
-            return $this->replaceVars($res[0], $data, $args, function($res, $i){
-                $nameVar = Helper::getNameVarDelIn($res, $i);
-                return Helper::getScript($nameVar);
-            });
-
+        //Checking second enter for initial {{value}} in patch files
+        if ($dataTwo != null){
+            return $dataTwo;
         }
         else {
+            $data = Helper::getDataTemplate($args);
+
+                //Checking setting file template path
+            if (!$data){
+                try {
+                    $message = 'Error get content. Please check your template-file path settings';
+                    throw new \Exception($message);
+                }
+                catch (\Exception $e){
+                    echo $e->getMessage();
+                    exit();
+                }
+            }
             return $data;
         }
-    }
-
-    /**
-     * @param $argv array
-     * @return bool|string
-     */
-    public function getDataTemplate(array $args)
-    {
-        return @file_get_contents($args['tempFile']);
-    }
-
-    public function replaceEt(string $data, array $args)
-    {
-        $search = Helper::searchEt($data);
-        $res = Helper::filterComment($search[0]);
-        if ($res) {
-            return $this->replaceVars($res, $data, $args,
-                function ($res, $i, $args){
-                return Helper::getPatch($res, $i, $args);
-            });
-        }
-        else {
-            return $data;
-        }
-    }
-    public function replaceVars($res, $data, $args, $dataC)
-    {
-        $count = count($res);
-        global $newData;
-        $newData = null;
-        for ($i = 0; $i < $count; $i++) {
-            if (is_callable($dataC)){
-                $dataF = $dataC($res,  $i, $args);
-            }
-            else{
-                $dataF = $dataC;
-            }
-            if ($newData == null) {
-                $newData = str_replace($res[$i], $dataF, $data);
-            } else {
-                $newData = str_replace($res[$i], $dataF, $newData);
-            }
-        }
-        $result = $newData;
-        unset($newData);
-        return $result;
     }
 }

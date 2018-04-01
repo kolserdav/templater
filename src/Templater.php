@@ -58,4 +58,6 @@ abstract class Templater
         preg_match("%.*templater%",dirname(__DIR__),$m);
         return preg_filter('%.{1}templater%','',$m[0]);
     }
+
+
 }

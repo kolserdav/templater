@@ -25,7 +25,7 @@ At the moment the following structures are supported
 ``` 
 
 
-**_`Construction '@field' only works in template file.`_**
+**_`If you use control characters as '@' in the comments to your template files, then escape them with '#'`_**
 
 
 _Using_

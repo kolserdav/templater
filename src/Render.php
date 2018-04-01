@@ -8,8 +8,6 @@
 
 namespace Avir\Templater;
 
-use Avir\Templater\Helper;
-
 class Render extends Templater
 {
     /**
@@ -21,35 +19,26 @@ class Render extends Templater
     public function render(array $args = [], array $files = []): bool
     {
         $bg = new Background();
+
         $argv = [
             'tempFile' => $this->tempFile,
             'viewDir' => $this->viewDir,
             'files' => $files
         ];
+
         $args = array_merge($argv, $args);
-            //Get first data with replace {{values}} on 'echo $values;'
-        if (!empty($args)){
-            $data = $bg->prepareCurly($args);
-        }
-        else {
-            $data = $bg->getDataTemplate($args);
-        }
 
-            /**
-             * Get second data with replace @field on custom .html files content
-             * And replace {% for in block %} on foreach(){} construction
-             */
-        if (!empty($args) || !empty($files)){
-            $dataTwo = $bg->prepareEtAndFor($data, $args);
-        }
-        else {
-            $dataTwo = $data;
-        }
+            //Get data from template file
+        $data = $bg->getData($args);
 
-            //Replace {{value}} on 'echo $value' in patch files
+            //Replace 'fields' with '@'-selector
+        $dataTwo = $bg->prepareEt($args, $data);
+
+            //Replace {{ value }} variables on 'echo $value;'
         $dataTwo = $bg->prepareCurly($args, $dataTwo);
 
-        $dataTwo = $bg->replaceEt($dataTwo, $args);
+            //Replace {% for in %}construction on 'foreach(){}'
+        $dataTwo = $bg->prepareFor($args, $dataTwo);
 
             //Get custom cache catalog
         $cacheCatalog = $bg->setCacheCatalog($this->root);
@@ -59,6 +48,8 @@ class Render extends Templater
 
             //Checking the cache file
         if (!file_exists($fileName)) {
+
+                //Creating a cache file
             copy($this->tempFile, $fileName);
             $res = fopen($fileName, 'w');
             fwrite($res, $dataTwo);
