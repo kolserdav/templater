@@ -24,11 +24,6 @@ At the moment the following structures are supported
 {% endfor  %}
 ``` 
 
-
-**_`If you use control characters with transmitted variables as '@some' in the comments to your template files,
- then escape them as '#@some'`_**
-
-
 _Using_
 
 For use this module need some dependencies write in your index file

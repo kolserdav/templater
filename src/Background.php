@@ -16,20 +16,30 @@ class Background extends Config
      * And prepare 'for in' constructions
      * @param $data string
      * @param $args array
+     * @param $i = 0 int
      * @return string
      */
-    public function prepareEt(array $args, string $data): string
+    public function prepareEt(array $args, string $data, int $i = 0): string
     {
 
-        if (!Helper::searchEt($data)){
+        if (!$arr = Helper::searchEt($data)){
             return $data;
         }
         else {
-
+            if ($i == 50){
+                try{
+                    throw new \Exception("The server performed a cyclic redirect. 
+                    Please dispose of field $arr[0] in the patch file comment. Can be replaced by #$arr[0]." );
+                }
+                catch (\Exception $e){
+                   echo $e->getMessage();
+                    exit();
+                }
+            }
                 //Processes on 'field' replace
             $newData = $this->replaceEt($data, $args);
 
-            return $this->prepareEt($args, $newData);
+            return $this->prepareEt($args, $newData, $i + 1);
         }
     }
 
