@@ -21,15 +21,14 @@ class Background extends Config
      */
     public function prepareEt(array $args, string $data, int $i = 0): string
     {
-
-        if (!$arr = Helper::searchEt($data)){
+        if (!$arr = Helper::searchEtDirt($data)){
             return $data;
         }
         else {
             if ($i == 50){
                 try{
                     throw new \Exception("The server performed a cyclic redirect. 
-                    Please dispose of field $arr[0] in the patch file comment. Can be replaced by #$arr[0]." );
+                    Variable $arr[0] use recursively." );
                 }
                 catch (\Exception $e){
                    echo $e->getMessage();
@@ -51,8 +50,9 @@ class Background extends Config
      */
     public function replaceEt(string $data, array $args)
     {
-        $res = Helper::searchEt($data);
-        if (Helper::searchEt($data)) {
+        $res = Helper::searchEtDirt($data);
+
+        if ($res) {
             return Helper::replaceVars($res, $data, $args,
                 function ($res, $i, $args){
                     return Helper::getPatch($res, $i, $args);
@@ -107,15 +107,31 @@ class Background extends Config
      */
     public function replaceFor(string $data, $args): string
     {
-        if ($res = Helper::searchFor($data)){
-            return Helper::replaceVars($res[0], $data, $args, function($res, $i){
-                $nameVar = Helper::getNameVarDelIn($res, $i);
+        if ($preRes = Helper::searchFor($data)){
+            $res = Helper::filterFor($preRes);
+
+            $args['resFor'] = $res['forIn'];
+            return Helper::replaceVars($res['value'], $data, $args, function($res, $i, $resFor){
+                $nameVar = Helper::getNameVarDelIn($res, $i, $resFor);
                 return Helper::getScript($nameVar);
             });
 
         }
         else {
             return $data;
+        }
+    }
+    public function clearForDirt($data)
+    {
+        $in = Helper::forPregIn($data);
+        $end = Helper::forPregEnd($data);
+        if (!$in && !$end)
+        {
+            return $data;
+        }
+        else {
+            $newData = str_replace([$in,$end],'',$data);
+            return $this->clearForDirt($newData);
         }
     }
 

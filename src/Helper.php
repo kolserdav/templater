@@ -21,15 +21,40 @@ class Helper
     }
 
     /**
-     * @param string $data
+     * @param string|array $data
      * @return bool|array
      */
-    public static function searchEt(string $data)
+    public static function searchEt($data)
     {
-        preg_match_all('%\#?\@[\w]+%', $data, $res);
-        $result = self::filterComment($res[0]);
-        if ($result !== false) {
+        if (is_string($data)) {
+            $dirt = self::searchEtDirt($data);
+        }
+        else {
+            $dirt = $data;
+        }
+        $res = array_map(function ($arr){
+            return trim(str_replace(['%', '{', '}'], '', $arr));
+            }, $dirt);
+        $result = self::rangeArray($res);
+        if (!empty($result)) {
             return $result;
+        }
+        else {
+            return false;
+        }
+    }
+
+    /**
+     * @param $data
+     * @return array|bool
+     */
+    public static function searchEtDirt($data)
+    {
+        if( preg_match_all('#\{\%.*[\w]*.*\%\}#', $data, $res)) {
+            $res =  array_filter($res[0], function ($var) {
+                return (!self::forPreg($var));
+            });
+            return self::rangeArray($res);
         }
         else {
             return false;
@@ -40,20 +65,16 @@ class Helper
      * @param array $tags
      * @return bool|array
      */
-    protected static function filterComment(array $tags)
+    protected static function rangeArray(array $tags)
     {
-        $noKeys = array_filter($tags,  function ($var)
-        {
-            return (!preg_match('%\#%',$var));
-        });
-        $count = count($noKeys);
+        $count = count($tags);
         if ($count == 0){
             return false;
         }
         else {
             $arrayKeys = range(0, $count - 1);
         }
-        $result = array_combine($arrayKeys, $noKeys);
+        $result = array_combine($arrayKeys, $tags);
         if (!empty($result)) {
             return $result;
         }
@@ -65,16 +86,69 @@ class Helper
 
     /**
      * @param string $data
-     * @return bool|array
+     * @return bool
      */
-    public static function searchFor(string $data)
+    public static function forPreg(string $data)
     {
-        if (preg_match_all('#\{\%.*for.+in.*\%\}.*\n?\{\%.*\%\}.*\n?\{\%.*endfor.*\%\}#', $data, $result)) {
+        $pattern = '#\n?\{\%\s*for.+in\s+\w*\s*\%\}\s*\{\{\s*\w*\s*\}\}\s*\{\%\s*endfor\s*\%\}\s*#';
+        $val = preg_match_all($pattern, $data, $result);
+        if ($val){
             return $result;
         }
         else {
             return false;
         }
+    }
+    public static function forPregIn($var)
+    {
+        $val = preg_match('%\s*\{\%\s*for\s+\w*.+in\s+\w*\s*\%\}\s*%', $var, $result);
+        if ($val){
+            return $result[0];
+        }
+        else {
+            return false;
+        }
+    }
+
+    public static function forPregEnd($var)
+    {
+        $val = preg_match('%\s*\{\%\s*endfor\s*\%\}\s*%', $var, $result);
+        if ($val){
+            return $result[0];
+        }
+        else {
+            return false;
+        }
+    }
+
+    /**
+     * @param string $data
+     * @return bool|array
+     */
+    public static function searchFor(string $data)
+    {
+        if ($result = self::forPreg($data)) {
+            return $result;
+        }
+        else {
+            return false;
+        }
+    }
+
+    public static function filterFor($preRes)
+    {
+        $res['value'] = array_map(function ($val){
+            preg_match('%\s*\{\{\s*\w*\s*\}\}\s*%', $val, $m);
+            return $m[0];
+        }, $preRes[0]);
+        $res['forIn'] = array_map(function ($val){
+            return self::forPregIn($val);
+        }, $preRes[0]);
+        $res['endFor'] = array_map(function ($val){
+            return self::forPregEnd($val);
+        }, $preRes[0]);
+
+        return $res;
     }
 
     /**
@@ -85,7 +159,9 @@ class Helper
      */
     public static function getPatch(array $res, int $i, array $args)
     {
-        @$dataF = file_get_contents($args['viewDir'] . $args['files'][$res[$i]]);
+        $key = Helper::searchEt($res);
+        $file = $args['viewDir'] . $args['files'][$key[$i]];
+        @$dataF = file_get_contents($file);
         return $dataF;
     }
 
@@ -102,11 +178,16 @@ class Helper
     /**
      * @param array $res
      * @param int $i
+     * @param array $args
      * @return string
      */
-    public static function getNameVarDelIn(array $res, int $i): string
+    public static function getNameVarDelIn(array $res, int $i, $args = array()): string
     {
-        preg_match('#in.?\w*#', $res[$i], $m);
+        if (!empty($args['resFor'])){
+            $res = $args['resFor'];
+        }
+        preg_match('#in\s*\w*#', $res[$i], $m);
+
         return trim(str_replace('in', '', $m[0]));
     }
 
@@ -116,7 +197,7 @@ class Helper
      */
     public static function filterCurly(string $data): array
     {
-        preg_match_all('%\{\{.?\w+.?}\}%', $data, $res);
+        preg_match_all('%\{\{.?[\w]*.{0,4}\}\}%', $data, $res);
         return $res[0];
 
     }
@@ -130,6 +211,15 @@ class Helper
     public static function delCurly(array $res, int $i, array $args): string
     {
         $nameVar = trim(str_replace(['{', '}'], '',$res[$i]));
+        if ($args[$nameVar] == null){
+            try {
+                throw new \Exception('Problem with cycle "for in" syntax in your template file.');
+            }
+            catch (\Exception $e){
+                echo $e->getMessage();
+                exit();
+            }
+        }
         return $args[$nameVar];
     }
 

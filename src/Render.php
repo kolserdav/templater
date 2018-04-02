@@ -34,11 +34,15 @@ class Render extends Templater
             //Replace 'fields' with '@'-selector
         $dataTwo = $bg->prepareEt($args, $data);
 
-            //Replace {{ value }} variables on 'echo $value;'
-        $dataTwo = $bg->prepareCurly($args, $dataTwo);
+
 
             //Replace {% for in %}construction on 'foreach(){}'
         $dataTwo = $bg->prepareFor($args, $dataTwo);
+
+        $dataTwo = $bg->clearForDirt($dataTwo);
+
+        //Replace {{ value }} variables on 'echo $value;'
+        $dataTwo = $bg->prepareCurly($args, $dataTwo);
 
             //Get custom cache catalog
         $cacheCatalog = $bg->setCacheCatalog($this->root);
