@@ -17,9 +17,9 @@ At the moment the following structures are supported
 ```$xslt
 {{ variable }}  //some variable need sent to render(['variable' => 'value'],[])
  
-@field  //HTML block field, need sent to render([],['@field' => 'path/patch.file.html'])
+{% field %}  //HTML block field, need sent to render([],['field' => 'path/patch.file.html'])
 
-{% for value in array %} //for in, need sent to render(['for_array' => [1,2,3], ['@field' => 'path/patch.file.html']])  
+{% for value in array %} //for in, need sent to render(['for_array' => [1,2,3], ['field' => 'path/patch.file.html']])  
 {{ value }}
 {% endfor  %}
 ``` 
