@@ -27,7 +27,13 @@ Construction for in supported using with tags. For example:
 {% for value in array %}<h3>{{ value }}</h3><br>{% endfor %}
 ```
 
-Bud for correct work name 'value' must be unique for one page.
+Bud for correct work name 'value' must be unique for one page.  
+For example
+```
+{% for value1 in array_one %}{{ value1 }}{% endfor %}
+
+{% for value2 in array_two %}{{ value2 }}{% endfor %}
+```
 
 _Using_
 
