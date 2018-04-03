@@ -109,7 +109,6 @@ class Background extends Config
     {
         if ($preRes = Helper::searchFor($data)){
             $res = Helper::filterFor($preRes);
-
             $args['resFor'] = $res['forIn'];
             return Helper::replaceVars($res['value'], $data, $args, function($res, $i, $resFor){
                 $nameVar = Helper::getNameVarDelIn($res, $i, $resFor);

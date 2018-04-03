@@ -11,6 +11,8 @@ namespace Avir\Templater;
 
 class Helper
 {
+    private static $keysArr;
+    public static $data;
     /**
      * @param $args array
      * @return bool|string
@@ -138,8 +140,7 @@ class Helper
     public static function filterFor($preRes)
     {
         $res['value'] = array_map(function ($val){
-            preg_match('%\s*\{\{\s*\w*\s*\}\}\s*%', $val, $m);
-            return $m[0];
+            return self::searchValue($val);
         }, $preRes[0]);
         $res['forIn'] = array_map(function ($val){
             return self::forPregIn($val);
@@ -147,9 +148,24 @@ class Helper
         $res['endFor'] = array_map(function ($val){
             return self::forPregEnd($val);
         }, $preRes[0]);
-
         return $res;
     }
+
+    /**
+     * @param $data
+     * @return bool
+     */
+    public static function searchValue($data)
+    {
+        $res = preg_match('%\s*\{\{\s*\w*\s*\}\}\s*%', $data, $result);
+        if ($res) {
+            return $result[0];
+        } else {
+            return false;
+        }
+
+    }
+
 
     /**
      * @param array$res
@@ -213,7 +229,8 @@ class Helper
         $nameVar = trim(str_replace(['{', '}'], '',$res[$i]));
         if ($args[$nameVar] == null){
             try {
-                throw new \Exception('Problem with cycle "for in" syntax in your template file.');
+                throw new \Exception("Problem with 'for in' syntax in your template file.<br>
+                Construction {%for value in array%}{{value}}{%endfor%} must be in one line located.");
             }
             catch (\Exception $e){
                 echo $e->getMessage();
