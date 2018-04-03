@@ -19,7 +19,7 @@ At the moment the following structures are supported
  
 {% field %}  //HTML block field, need sent to render([],['field' => 'path/patch.file.html'])
 
-{% for value in array %}{{ value }}{% endfor %} //for in, need sent to render(['for_array' => [1,2,3], ['field' => 'path/patch.file.']])  
+{% for value in array %}{{ value }}{% endfor %} //for in, need sent to render(['for_array' => [1,2,3])  
 ``` 
 
 Construction for in supported using with tags. For example:
@@ -64,8 +64,8 @@ $obj->render(
         'for_array2' => [4,3,2,1]
     ],
     [
-        '@example_field1' => 'patch.file.html', //patches repository /template-catalog/views
-        '@example_field2' => 'path/patch.file.html' //patches repository /template-catalog/views/path
+        '@example_field1' => 'patch.file', //patches repository /template-catalog/views
+        '@example_field2' => 'path/patch.file' //patches repository /template-catalog/views/path
         ]);
 ```
 
