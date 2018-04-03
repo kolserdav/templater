@@ -35,7 +35,6 @@ class Render extends Templater
         $dataTwo = $bg->prepareEt($args, $data);
 
 
-
             //Replace {% for in %}construction on 'foreach(){}'
         $dataTwo = $bg->prepareFor($args, $dataTwo);
 

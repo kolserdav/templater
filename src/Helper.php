@@ -90,17 +90,32 @@ class Helper
      * @param string $data
      * @return bool
      */
-    public static function forPreg(string $data)
+    public static function forPreg(string $data, $i = false)
     {
-        $pattern = '#\n?\{\%\s*for.+in\s+\w*\s*\%\}\s*\{\{\s*\w*\s*\}\}\s*\{\%\s*endfor\s*\%\}\s*#';
-        $val = preg_match_all($pattern, $data, $result);
-        if ($val){
-            return $result;
+        if ($i == true){
+            $pattern = '#\n?\{\%\s*for.+in\s+\w*\s*\%\}.*\{\{\s*\w*\s*\}\}.*\{\%\s*endfor\s*\%\}\s*#';
+            $val = preg_match($pattern, $data, $result);
+            if ($val) {
+                return $result;
+            } else {
+                return false;
+            }
         }
         else {
-            return false;
+            $pattern = '#\n?\{\%\s*for.+in\s+\w*\s*\%\}.*\{\{\s*\w*\s*\}\}.*\{\%\s*endfor\s*\%\}\s*#';
+            $val = preg_match_all($pattern, $data, $result);
+            if ($val) {
+                return $result;
+            } else {
+                return false;
+            }
         }
     }
+
+    /**
+     * @param $var
+     * @return bool
+     */
     public static function forPregIn($var)
     {
         $val = preg_match('%\s*\{\%\s*for\s+\w*.+in\s+\w*\s*\%\}\s*%', $var, $result);
@@ -112,6 +127,10 @@ class Helper
         }
     }
 
+    /**
+     * @param $var
+     * @return bool
+     */
     public static function forPregEnd($var)
     {
         $val = preg_match('%\s*\{\%\s*endfor\s*\%\}\s*%', $var, $result);
@@ -137,6 +156,10 @@ class Helper
         }
     }
 
+    /**
+     * @param $preRes
+     * @return mixed
+     */
     public static function filterFor($preRes)
     {
         $res['value'] = array_map(function ($val){

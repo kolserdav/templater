@@ -11,6 +11,7 @@ namespace Avir\Templater;
 
 class Background extends Config
 {
+    public $dataFor;
     /**
      * Replace 'field' on $file['value'] content
      * And prepare 'for in' constructions
@@ -87,6 +88,11 @@ class Background extends Config
         }
     }
 
+    /**
+     * @param $args
+     * @param $newData
+     * @return string
+     */
     public function prepareFor($args, $newData)
     {
             //Processes on {% for in %} replace
@@ -120,6 +126,11 @@ class Background extends Config
             return $data;
         }
     }
+
+    /**
+     * @param $data
+     * @return mixed
+     */
     public function clearForDirt($data)
     {
         $in = Helper::forPregIn($data);

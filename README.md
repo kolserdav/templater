@@ -22,6 +22,13 @@ At the moment the following structures are supported
 {% for value in array %}{{ value }}{% endfor %} //for in, need sent to render(['for_array' => [1,2,3], ['field' => 'path/patch.file.']])  
 ``` 
 
+Construction for in supported using with tags. For example:
+```
+{% for value in array %}<h3>{{ value }}</h3><br>{% endfor %}
+```
+
+Bud for correct work name 'value' must be unique for one page.
+
 _Using_
 
 For use this module need some dependencies write in your index file
