@@ -18,10 +18,17 @@ class Config
     public static $cache;
 
     /**
+     * Caching for user side
+     * @var string
+     */
+    public static $userCache;
+
+    /**
      * @param array $args
      */
     public function setConfig(array $args = array())
     {
         static::$cache = $args['cache'];
+        static::$userCache = $args['userCache'];
     }
 }

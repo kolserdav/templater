@@ -216,6 +216,20 @@ class Background extends Config
     }
 
     /**
+     * @param string $root
+     * @return string
+     */
+    public function setUserCacheCatalog(string $root): string
+    {
+        if (parent::$userCache){
+            return $root.'/'.parent::$userCache;
+        }
+        else {
+            return false;
+        }
+    }
+
+    /**
      * @param $args
      * @param null $dataTwo
      * @return bool|null|string

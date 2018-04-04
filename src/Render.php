@@ -45,6 +45,7 @@ class Render extends Templater
 
             //Get custom cache catalog
         $cacheCatalog = $bg->setCacheCatalog($this->root);
+        $userCacheCatalog = $bg->setUserCacheCatalog($this->root);
 
             //Get name file of cache and operation with him
         $fileName = $this->getFileName($cacheCatalog, $dataTwo);
@@ -53,14 +54,18 @@ class Render extends Templater
         if (!file_exists($fileName)) {
 
                 //Creating a cache file
-            copy($this->tempFile, $fileName);
-            $res = fopen($fileName, 'w');
-            fwrite($res, $dataTwo);
-            fclose($res);
+            $this->copyWriteFile($fileName, $dataTwo);
         }
-
-            //Require ready content file
-        require $fileName;
+        if (!$userCacheCatalog){
+                //Require ready content file
+            require $fileName;
+        }
+        else {
+            $htmlData = shell_exec("php $fileName");
+            $htmlFileName = $this->getHtmlFileName($userCacheCatalog, $htmlData);
+            $this->copyWriteFile($htmlFileName,$htmlData);
+            require $htmlFileName;
+        }
         if ($cacheCatalog == '.') {
             unlink($fileName);
             return false;
@@ -78,5 +83,23 @@ class Render extends Templater
     {
         return $cache_catalog.'/'.md5($file_cache).'.php';
     }
-
+    public function getHtmlFileName(string $user_cache_catalog, string $file_cache): string
+    {
+        return $user_cache_catalog.'/'.md5($file_cache).'.html';
+    }
+    public function copyWriteFile($file_name, $data)
+    {
+        try{
+            if (!@copy($this->tempFile, $file_name)){
+                throw new \Exception("Please check on the path correctness in 'setConfig' function attributes.");
+            }
+        }
+        catch (\Exception $e){
+            echo $e->getMessage();
+            exit();
+        }
+        $res = fopen($file_name, 'w');
+        fwrite($res, $data);
+        fclose($res);
+    }
 }
