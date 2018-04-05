@@ -98,7 +98,7 @@ class Background extends Config
             //Processes on {% for in %} replace
         $filterFor = Helper::searchFor($newData);
         if ($filterFor) {
-            $result = $this->replaceFor($newData, $args);
+            $result = $this->replaceFor($newData, $args, $filterFor);
             return $this->readVariableArrays($result, $args);
         }
         else {
@@ -109,12 +109,14 @@ class Background extends Config
     /**
      * @param $data string
      * @param $args array
+     * @param $preRes array
      * @return string
      */
-    public function replaceFor(string $data, $args): string
+    public function replaceFor(string $data, $args, $preRes): string
     {
-        if ($preRes = Helper::searchFor($data)){
+        if ($preRes){
             $res = Helper::filterFor($preRes);
+            Helper::checkForAttrib($res['forIn'], $args);
             $args['resFor'] = $res['forIn'];
             return Helper::replaceVars($res['value'], $data, $args, function($res, $i, $resFor){
                 $nameVar = Helper::getNameVarDelIn($res, $i, $resFor);
@@ -157,7 +159,8 @@ class Background extends Config
         $count = count($keys);
         global $variables;
         for ($i = 0; $i < $count; $i ++) {
-            if (preg_match('%for\_[\w]*%', $keys[$i], $m)) {
+            $m = Helper::searchLineFor($keys, $i);
+            if ($m) {
                 $variables[] = $m[0];
             }
             else {
@@ -182,7 +185,7 @@ class Background extends Config
         $count = count($variables);
         for ($i = 0; $i < $count; $i ++) {
             $key = $variables[$i];
-            $val = str_replace('for_', '', $key );
+            $val = Helper::delFor($key);
             foreach ($args[$key] as $value){
                 if (gettype($value) == 'string'){
                     $vals .= "'$value',";

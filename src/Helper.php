@@ -128,6 +128,37 @@ class Helper
     }
 
     /**
+     * @param $res
+     * @param $args
+     */
+    public static function checkForAttrib($res, $args)
+    {
+        $var = self::getNameVarDelIn($res);
+            //Check args keys  and del 'for_' prefix;
+        $val = self::delFor(self::rangeArray(self::searchLineFor(array_keys($args))));
+        if ($val == null){
+            try {
+                throw new \Exception("Empty 'render()' function parameters as [for_$var[0] => [variables]]");
+            }
+            catch (\Exception $e){
+                echo $e->getMessage();
+                exit();
+            }
+        }
+        $vol = array_diff($var, $val);
+        $vol = self::rangeArray($vol);
+        if (!empty($vol)){
+            try {
+                throw new \Exception("Empty 'render()' function parameter as [for_$vol[0] => [variables]]");
+            }
+            catch (\Exception $e){
+                echo $e->getMessage();
+                exit();
+            }
+        }
+    }
+
+    /**
      * @param $var
      * @return bool
      */
@@ -218,16 +249,49 @@ class Helper
      * @param array $res
      * @param int $i
      * @param array $args
-     * @return string
+     * @return string|array|bool
      */
-    public static function getNameVarDelIn(array $res, int $i, $args = array()): string
+    public static function getNameVarDelIn(array $res, int $i = -1, $args = array())
     {
-        if (!empty($args['resFor'])){
-            $res = $args['resFor'];
-        }
-        preg_match('#in\s*\w*#', $res[$i], $m);
+        if ($i != -1) {
+            if (!empty($args['resFor'])) {
+                $res = $args['resFor'];
+            }
+            $m = self::delIn($res, $i);
 
-        return trim(str_replace('in', '', $m[0]));
+            return trim(str_replace('in', '', $m[0]));
+        }
+        else {
+            $val = preg_match_all('#in\s*\w*#', implode($res), $m);
+            $result = array_map(function ($val){
+                return trim(str_replace('in', '', $val));
+            },$m[0]);
+            if ($val){
+                return $result;
+            }
+            else {
+                return false;
+            }
+        }
+    }
+
+    /**
+     * @param $res
+     * @param int $i
+     * @return array
+     */
+    public static function delIn($res, $i = -1)
+    {
+        if ($i != -1) {
+            preg_match('#in\s*\w*#', $res[$i], $m);
+        }
+        else {
+            $m = array_map(function ($val){
+                preg_match('#in\s*\w*#', $val, $m);
+                return $m[0];
+            }, $res);
+        }
+        return $m;
     }
 
     /**
@@ -264,6 +328,26 @@ class Helper
     }
 
     /**
+     * @param $keys
+     * @param int $i
+     * @return array
+     */
+    public static function searchLineFor($keys, $i = -1)
+    {
+        if ($i != -1){
+        preg_match('%for\_[\w]*%', $keys[$i], $m);
+        return $m;
+        }
+        else {
+            $arr = array_filter($keys, function ($key){
+                return (preg_match('%for\_[\w]*%', $key, $m));
+            });
+
+            return $arr;
+        }
+    }
+
+    /**
      * Replace any vars module
      * @param array $res
      * @param string $data
@@ -289,5 +373,28 @@ class Helper
         $result = $newData;
         unset($newData);
         return $result;
+    }
+
+    /**
+     * @param $key
+     * @param int $i
+     * @return mixed
+     */
+    public static function delFor($key, $i = 0)
+    {
+        if(is_array($key)) {
+            if ($i < count($key)) {
+                static::$keysArr[] = str_replace('for_', '', $key[$i]);
+
+                return self::delFor($key, $i + 1);
+
+            }
+            else {
+                return self::$keysArr;
+            }
+        }
+        else {
+            return str_replace('for_', '', $key);
+        }
     }
 }
