@@ -10,6 +10,7 @@ namespace Avir\Templater;
 
 class Render extends Templater
 {
+
     /**
      * This is the module collector
      * @param array $files
@@ -61,16 +62,54 @@ class Render extends Templater
             require $fileName;
         }
         else {
-            $htmlData = shell_exec("php $fileName");
-            $htmlFileName = $this->getHtmlFileName($userCacheCatalog, $htmlData);
-            $this->copyWriteFile($htmlFileName,$htmlData);
-            require $htmlFileName;
+           //    echo file_get_contents(__DIR__.'./storage/cookie.html');
+            $this->userCache($fileName, $userCacheCatalog);
         }
         if ($cacheCatalog == '.') {
             unlink($fileName);
             return false;
         }
         return true;
+    }
+    public function userCache($fileName, $userCacheCatalog)
+    {
+        $bg = new Background();
+        $cookie = $this->getCookie('test');
+        if(empty($cookie)){
+            $userDir = false;
+        }
+        else {
+            $userDir = $this->getCookie('test');
+        }
+        if($this->ajaxData) {var_dump(2222);exit();
+
+        }
+        else {
+            $htmlData = shell_exec("php $fileName");
+            $title = Helper::searchTitle($htmlData);
+            if ($userDir){
+                $userCacheDir = $this->usersDir.'/'.$userDir;
+                if (!is_dir($userCacheDir)) {
+                    @$userCacheDir = mkdir($userCacheDir);
+                }
+            }
+            if (!$title) {
+                $htmlFileName = $this->getHtmlFileName($userCacheCatalog, $htmlData);
+            } else {
+                $htmlFileName = $this->getHtmlTitleFile($userCacheCatalog, $title);
+            }
+            $this->copyWriteFile($htmlFileName, $htmlData);
+            require $htmlFileName;
+        }
+    }
+    public function getCookie($cookie_name)
+    {
+        return base64_decode($_COOKIE[$cookie_name]);
+    }
+
+    public function ajax()
+    {
+       //var_dump($this->ajaxData);
     }
 
 
@@ -101,5 +140,10 @@ class Render extends Templater
         $res = fopen($file_name, 'w');
         fwrite($res, $data);
         fclose($res);
+    }
+
+    public function getHtmlTitleFile($user_cache_catalog, $title)
+    {
+        return $user_cache_catalog.'/'.$title.'.html';
     }
 }

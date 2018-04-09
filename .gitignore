@@ -3,3 +3,7 @@ vendor
 composer.lock
 index.php
 src/examples/
+node_modules/
+public/
+package-lock.json
+config/

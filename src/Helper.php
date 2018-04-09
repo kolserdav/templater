@@ -397,4 +397,14 @@ class Helper
             return str_replace('for_', '', $key);
         }
     }
+
+    public static function searchTitle($data)
+    {
+        if (!preg_match('%\<title\>.*\<\/title\>%', $data, $res)){
+            return false;
+        }
+        else {
+            return trim(str_replace(['<','>','/','title'], '', $res[0]));
+        }
+    }
 }

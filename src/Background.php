@@ -231,6 +231,10 @@ class Background extends Config
             return false;
         }
     }
+    public function getUserCacheCatalog()
+    {
+        return parent::$userCache;
+    }
 
     /**
      * @param $args
