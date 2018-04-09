@@ -6,8 +6,9 @@
  * Time: 22:25
  */
 
-namespace Avir\Templater;
+namespace Avir\Templater\Module;
 
+use Symfony\Component\Yaml\Yaml;
 
 abstract class Templater
 {
@@ -37,6 +38,10 @@ abstract class Templater
     public $ajaxData;
     public $usersDir;
     public $bg;
+    public $protocol;
+    public $serverName;
+    public $userCacheCatalog;
+
 
     /**
      * Templater constructor.
@@ -49,12 +54,20 @@ abstract class Templater
         $this->bg = new Background();
         if ($users_dir !== null){
             $this->usersDir = $this->bg->setUserCacheCatalog($this->getRoot()).'/'.$users_dir;
+            $fileDirs = __DIR__ . '/../../storage/dirs.yaml';
+            $pars = Yaml::parseFile($fileDirs);
+            if(!$pars['userDir']) {
+                $res = fopen($fileDirs, 'a');
+                fwrite($res, "userDir : $this->usersDir");
+                fclose($res);
+            }
             if (!is_dir($this->bg->setUserCacheCatalog($this->getRoot()))){
                 @mkdir($this->bg->setUserCacheCatalog($this->getRoot()));
             }
             if (!is_dir($this->usersDir)){
                 @mkdir($this->usersDir);
             }
+
         }
         else {
             $this->usersDir = $this->bg->setUserCacheCatalog($this->getRoot());
@@ -63,6 +76,8 @@ abstract class Templater
             }
         }
         if ($temp_file !== null) {
+            $this->serverName = $_SERVER['SERVER_NAME'];
+            $this->protocol = preg_replace('%\/\d*\.\d*%','', $_SERVER['SERVER_PROTOCOL']);
             $this->root = $this->getRoot();
             $this->tempDir = "$this->root/$temp_dir";
             $this->tempFile = "$this->tempDir/$temp_file";
@@ -80,8 +95,8 @@ abstract class Templater
      */
     public function getRoot(): string
     {
-        preg_match("%.*templater%",dirname(__DIR__),$m);
-        return preg_filter('%.{1}templater%','',$m[0]);
+        preg_match("%.*src%",dirname(__DIR__),$m);
+        return preg_filter('%.{1}src%','',$m[0]);
     }
 
 

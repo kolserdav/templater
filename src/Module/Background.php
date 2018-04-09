@@ -6,7 +6,7 @@
  * Time: 22:41
  */
 
-namespace Avir\Templater;
+namespace Avir\Templater\Module;
 
 
 class Background extends Config

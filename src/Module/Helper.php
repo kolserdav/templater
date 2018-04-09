@@ -6,7 +6,7 @@
  * Time: 16:41
  */
 
-namespace Avir\Templater;
+namespace Avir\Templater\Module;
 
 
 class Helper

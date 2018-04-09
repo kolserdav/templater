@@ -6,7 +6,7 @@
  * Time: 2:09
  */
 
-namespace Avir\Templater;
+namespace Avir\Templater\Module;
 
 
 class Config
@@ -23,6 +23,7 @@ class Config
      */
     public static $userCache;
 
+
     /**
      * @param array $args
      */
@@ -30,5 +31,6 @@ class Config
     {
         static::$cache = $args['cache'];
         static::$userCache = $args['userCache'];
+
     }
 }

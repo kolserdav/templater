@@ -8,8 +8,8 @@
 
 namespace Avir\Templater\Controller;
 
-use Avir\Templater\Render;
-use Avir\Templater\Config;
+use Avir\Templater\Module\Render;
+use Avir\Templater\Module\Config;
 
 class TestController
 {
@@ -17,7 +17,26 @@ class TestController
     public function test()
     {
 
-        return true;
+        $c = new Config();
+        $c->setConfig([
+            'cache' => 'var/cache',
+            'userCache' => 'public/cache'
+        ]);
+        $r = new Render('template', '/template.twig', 'users');
+        $sss = "<hr>ffffff<hr>";
+        $r->render(
+            [
+                'test1' => 'aaa',
+                'test2' => 'bbb',
+                'test3' => 'ccc',
+                'for_array' => [1,2,3,$sss],
+                'for_array2' => ['f','E'],
+                'for_array3' => ['a','f','s']
+            ],[
+            'field1' => 'index.twig',
+            'field2' => 'app/ind.twig',
+            'title' => 'app/title.twig'
+        ]);
     }
     public function tests()
     {
