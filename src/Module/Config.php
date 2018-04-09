@@ -22,6 +22,7 @@ class Config
      * @var string
      */
     public static $userCache;
+    public static $cookieName;
 
 
     /**
@@ -31,6 +32,11 @@ class Config
     {
         static::$cache = $args['cache'];
         static::$userCache = $args['userCache'];
+
+    }
+    public function setCookie(string $name = 'name')
+    {
+        static::$cookieName = $name;
 
     }
 }

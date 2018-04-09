@@ -43,17 +43,18 @@ or controller file...
 Optional (if you need the cache of pages) 
 
 ```php
-use Avir\Templater\Config;
+use Avir\Templater\Module\Config;
 
 $config = new Config();
 $config->setConfig([
-    'cache' => '/path/cache/catalog' //default : false
+    'cache' => '/path/cache/catalog/+{pages}' //default : false
+    'userCache' => '/path/usrCache/catalog/+{users}' //default : false
 ]);
 ```
 Require (to include template)
 
 ```php
-use Avir\Templater\Render;
+use Avir\Templater\Module\Render;
 
 $obj = new Render('/path/template/catalog', '/template.file.php'); 
 $obj->render(

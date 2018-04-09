@@ -6,6 +6,9 @@
     "lastVisit" : "Date"
   },
   "pages" : {
-    "count" : 0
+    "count" : 0,
+    "page-0" : {
+      "test/path" : "test/title"
+    }
   }
 }

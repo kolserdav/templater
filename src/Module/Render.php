@@ -49,7 +49,7 @@ class Render extends Templater
 
             //Get custom cache catalog
         $cacheCatalog = $bg->setCacheCatalog($this->root);
-        $this->userCacheCatalog = $bg->setUserCacheCatalog($this->root);
+        $this->userCacheCatalog = $bg->setUserCacheCatalog($this->root, true);
 
             //Get name file of cache and operation with him
         $fileName = $this->getFileName($cacheCatalog, $dataTwo);
@@ -66,7 +66,7 @@ class Render extends Templater
             require $fileName;
         }
         else {
-           //    echo file_get_contents(__DIR__.'./storage/cookie.html');
+
             $this->userCache($fileName);
         }
         if ($cacheCatalog == '.') {
@@ -79,19 +79,15 @@ class Render extends Templater
     {
 
 
-        $userDir = $this->getCookie('test');
+        $userDir = $this->getCookie(Config::$cookieName);
 
         $userCacheDir = $this->usersDir.'/'.$userDir;
 
-        if (!is_dir($userCacheDir)) {
-            @mkdir($userCacheDir);
-        }
-        $jsonPath = __DIR__.'/../storage/card.json';
+        $this->checkAndCreateJsonDir($userCacheDir);
+
         $jsonName = $userCacheDir.'/'.'card.json';
 
-        if (!file_exists($jsonName)) {
-            copy($jsonPath, $jsonName);
-        }
+        $this->checkAndCreateJsonFile($jsonName, $this->jsonPath);
 
         $dataJson = json_decode(file_get_contents($jsonName));
 
@@ -113,6 +109,19 @@ class Render extends Templater
         require $htmlFileName;
 
     }
+
+    public function checkAndCreateJsonDir($userCacheDir)
+    {
+        if (!is_dir($userCacheDir)) {
+            @mkdir($userCacheDir);
+        }
+    }
+    public function checkAndCreateJsonFile($jsonName, $jsonPath)
+    {
+        if (!file_exists($jsonName)) {
+            copy($jsonPath, $jsonName);
+        }
+    }
     public function getCookie($cookie_name)
     {
         return base64_decode($_COOKIE[$cookie_name]);
@@ -122,8 +131,13 @@ class Render extends Templater
     {
         $data = json_decode($this->ajaxData['cookie']);
         $nameDir = $data->name->nameCookie->clear;
-        $usersDir = (Yaml::parseFile(__DIR__ . '/../../storage/dirs.yaml'))['userDir'];
-        $userFileCard = $usersDir.'/'.$nameDir.'/'.'card.json';
+        $yaml = __DIR__ . '/../../storage/dirs.yaml';
+        $usersDir = (Yaml::parseFile($yaml))['userDir'];
+        $jsonPath = (Yaml::parseFile($yaml))['jsonDef'];
+        $userDir = $usersDir.'/'.$nameDir;
+        $this->checkAndCreateJsonDir($userDir);
+        $userFileCard = $userDir.'/'.'card.json';
+        $this->checkAndCreateJsonFile($userFileCard,$jsonPath);
         $userFileData = json_decode(file_get_contents($userFileCard));
         if ($userFileData->info->name === 'Firstname_Lastname') {
             $userFileData->info->codename = $data->name->nameCookie->encode;
@@ -138,6 +152,7 @@ class Render extends Templater
         $currentPage = $this->getPageN($userFileData);
         $pag = new \stdClass();
         $host = $this->ajaxData['host'];
+
         if(!$this->searchHost($userFileData, $host)) {
             $pag->$host = $this->ajaxData['title'];
             $userFileData->pages->$currentPage = $pag;
@@ -159,6 +174,7 @@ class Render extends Templater
     {
         $page = 'page-'.$i;
         if ($i < $data->pages->count){
+            $data->pages->$page;
             if (property_exists($data->pages->$page, $host)){
                 $y = 1;
                 return self::searchHost($data, $host, $i + 1, $y);
@@ -169,7 +185,6 @@ class Render extends Templater
         }
         else {
             if ($y === 1){
-                var_dump($y);
                 return true;
             }
             else {

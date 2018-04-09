@@ -24,8 +24,10 @@ class TestController
         ]);
         $r = new Render('template', '/template.twig', 'users');
         $sss = "<hr>ffffff<hr>";
+        $man = 'http://'.$_SERVER['SERVER_NAME']."/.manifest.appcache";
         $r->render(
             [
+                'manifest'=>$man,
                 'test1' => 'aaa',
                 'test2' => 'bbb',
                 'test3' => 'ccc',
@@ -33,6 +35,7 @@ class TestController
                 'for_array2' => ['f','E'],
                 'for_array3' => ['a','f','s']
             ],[
+            'manif' => 'app/manifest.twig',
             'field1' => 'index.twig',
             'field2' => 'app/ind.twig',
             'title' => 'app/title.twig'

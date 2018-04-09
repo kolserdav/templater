@@ -41,6 +41,7 @@ abstract class Templater
     public $protocol;
     public $serverName;
     public $userCacheCatalog;
+    public $jsonPath;
 
 
     /**
@@ -52,17 +53,25 @@ abstract class Templater
     public function __construct($temp_dir, $temp_file, $users_dir = null)
     {
         $this->bg = new Background();
+        $root = $this->getRoot();
+        $this->jsonPath = "$root/storage/card.json";
         if ($users_dir !== null){
-            $this->usersDir = $this->bg->setUserCacheCatalog($this->getRoot()).'/'.$users_dir;
-            $fileDirs = __DIR__ . '/../../storage/dirs.yaml';
+
+            $this->usersDir = $this->bg->setUserCacheCatalog($root).'/'.$users_dir;
+            $fileDirs = $root. '/storage/dirs.yaml';
             $pars = Yaml::parseFile($fileDirs);
             if(!$pars['userDir']) {
                 $res = fopen($fileDirs, 'a');
                 fwrite($res, "userDir : $this->usersDir");
                 fclose($res);
             }
-            if (!is_dir($this->bg->setUserCacheCatalog($this->getRoot()))){
-                @mkdir($this->bg->setUserCacheCatalog($this->getRoot()));
+            if(!$pars['jsonDef']) {
+                $res = fopen($fileDirs, 'a');
+                fwrite($res, "\njsonDef : $this->jsonPath");
+                fclose($res);
+            }
+            if (!is_dir($this->bg->setUserCacheCatalog($root))){
+                @mkdir($this->bg->setUserCacheCatalog($root));
             }
             if (!is_dir($this->usersDir)){
                 @mkdir($this->usersDir);
@@ -70,7 +79,7 @@ abstract class Templater
 
         }
         else {
-            $this->usersDir = $this->bg->setUserCacheCatalog($this->getRoot());
+            $this->usersDir = $this->bg->setUserCacheCatalog($root);
             if (!is_dir($this->usersDir)){
                 @mkdir($this->usersDir);
             }
@@ -78,7 +87,7 @@ abstract class Templater
         if ($temp_file !== null) {
             $this->serverName = $_SERVER['SERVER_NAME'];
             $this->protocol = preg_replace('%\/\d*\.\d*%','', $_SERVER['SERVER_PROTOCOL']);
-            $this->root = $this->getRoot();
+            $this->root = $root;
             $this->tempDir = "$this->root/$temp_dir";
             $this->tempFile = "$this->tempDir/$temp_file";
             $this->viewDir = "$this->tempDir/views/";
