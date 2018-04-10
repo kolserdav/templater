@@ -22,7 +22,7 @@ class TestController
             'cache' => 'var/cache',
             'userCache' => 'public/cache'
         ]);
-        $r = new Render('template', '/template.twig', 'users');
+        $r = new Render('template', '/template.twig');
         $sss = "<hr>ffffff<hr>";
         $man = 'http://'.$_SERVER['SERVER_NAME']."/.manifest.appcache";
         $r->render(

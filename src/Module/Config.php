@@ -22,7 +22,10 @@ class Config
      * @var string
      */
     public static $userCache;
+    public static $usersDir;
     public static $cookieName;
+    public static $fileDirs;
+    public static $cardJson;
 
 
     /**
@@ -30,13 +33,32 @@ class Config
      */
     public function setConfig(array $args = array())
     {
+
         static::$cache = $args['cache'];
         static::$userCache = $args['userCache'];
+        static::$usersDir = self::setUsersDir($args);
+        static::$fileDirs = $args['fileDirs'];
+        static::$cardJson = $args['cardJson'];
 
     }
-    public function setCookie(string $name = 'name')
+    public static function setCookie(string $name = 'name')
     {
         static::$cookieName = $name;
+        return $name;
 
+    }
+    public static function setCardJson($jsonFileName = 'card.json')
+    {
+        static::$cardJson = $jsonFileName;
+        return $jsonFileName;
+    }
+    public static function setUsersDir($args)
+    {
+        if ($args['usersDir']){
+            return $args['usersDir'];
+        }
+        else {
+            return 'users';
+        }
     }
 }

@@ -70,79 +70,126 @@ abstract class Templater
      * @var string
      */
     public $jsonPath;
+    public $cardJson;
+    public  static $refactor;
 
 
     /**
      * Templater constructor.
      * @param $temp_dir
      * @param $temp_file
-     * @param $users_dir
      */
-    public function __construct($temp_dir, $temp_file, $users_dir = null)
+    public function __construct($temp_dir, $temp_file)
     {
-        $this->bg = new Background();
         $root = $this->getRoot();
-        $fileDirs = $root. '/storage/dirs.yaml';
 
+         //File with paths
+        $fileDirs = $root. '/storage/dirs.yaml';
         $pars = Yaml::parseFile($fileDirs);
 
-        $configUserCache = Config::$userCache;
-            //Writing cache dirs in yaml
-        if ($configUserCache && !$pars['userCache']){
-            $this->writeInYamlDirs($fileDirs, "\nuserCache : $configUserCache");
-        }
-        $configCache = Config::$cache;
-        if ($configCache && !$pars['cache']){
-            $this->writeInYamlDirs($fileDirs, "\ncache : $configCache");
-        }
-        if ($pars['userCache'] !== $configUserCache){
-            $pars['userCache'] = $configUserCache;
+            //Construct
+        if ($temp_file !== null){
 
-           // $this->writeInYamlDirs($fileDirs, implode($pars), 'w');
-        }
-        if ($pars['cache'] !== Config::$cache){
-            $pars['cache'] = Config::$cache;
-           // $this->writeInYamlDirs($fileDirs, implode($pars), 'w');
-        }
+                //User cache construct
+            if (Config::$userCache) {
+                $this->bg = new Background();
+                $configCache = Config::$cache;
+                $usersDir = Config::$usersDir;
+                $this->cardJson = Config::$cardJson;
+                if (!$this->cardJson) {
+                    $this->cardJson = Config::setCardJson();
+                }
 
-        $this->jsonPath = "$root/storage/card.json";
+                //Writing in yaml  user card.json file name
+                $fieldCardJson = 'cardJson';
+                if ($this->cardJson && !$pars[$fieldCardJson]) {
+                    $this->writeInYamlDirs($fileDirs, "\n$fieldCardJson : $this->cardJson");
+                } //Custom change user card.json file name
+                else if ($pars[$fieldCardJson] !== $this->cardJson) {
+                    $this->changeYamlData($pars, $this->cardJson, $fileDirs, $fieldCardJson);
+                }
+
+                //$root/$configUserCache/$prefixUsersDir
+                $this->usersDir = $this->bg->setUserCacheCatalog($root) . '/' . $usersDir;
+
+                //Typing card.json file
+                $this->jsonPath = "$root/storage/$this->cardJson";
+
+                //Users cache catalog set in Config::setConfig
+                $configUserCache = Config::$userCache;
+
+                //Writing typing card.json file in dirs.yaml
+                if (!$pars['jsonDef']) {
+                    $this->writeInYamlDirs($fileDirs, "\njsonDef : $this->jsonPath");
+                }
+
+                //Writing cache dir in yaml
+                if ($configUserCache && !$pars['userCache']) {
+                    $this->writeInYamlDirs($fileDirs, "\nuserCache : $configUserCache");
+                }
+
+                //Writing in yaml custom cache catalog
+                if ($configCache && !$pars['cache']) {
+                    $this->writeInYamlDirs($fileDirs, "\ncache : $configCache");
+                } //Custom change user cache catalog
+                else if ($pars['cache'] !== $configCache) {
+                    $this->changeYamlData($pars, $configCache, $fileDirs, 'cache');
+                }
+
+                //Writing cache usersDir in yaml
+                if (!$pars['userDir']) {
+                    $this->writeInYamlDirs($fileDirs, "\nuserDir : $this->usersDir");
+                } //Custom change users cache catalog
+                else if ($pars['userCache'] !== $configUserCache) {
+                    $this->changeYamlData($pars, $configUserCache, $fileDirs, 'userCache');
+                }
+
+                //Create users dir
+                $this->checkAndCreateUsersDir($this->usersDir);
+            }
+            if ($temp_dir) {
+
+                    //Fill paths parameters
+                $this->serverName = $_SERVER['SERVER_NAME'];
+                $this->protocol = $this->getProtocol();
+                $this->root = $root;
+                $this->tempDir = "$this->root/$temp_dir";
+                $this->tempFile = "$this->tempDir/$temp_file";
+                $this->viewDir = "$this->tempDir/views/";
+            }
+        }
 
             //Constructor for ajax request
-        if ($users_dir !== null){
+        else {
+            $data = Yaml::parseFile($fileDirs);
+            $this->ajaxData = $temp_dir;
             $c = new Config();
             $c->setConfig([
-                'cache' => $pars['cache'],
-                'userCache' => $pars['userCache']
+                'fileDirs' => $fileDirs,
+                'cardJson' => $data['cardJson']
             ]);
-            $this->usersDir = $this->bg->setUserCacheCatalog($root).'/'.$users_dir;
-
-            if(!$pars['userDir']) {
-                $this->writeInYamlDirs($fileDirs, "\nuserDir : $this->usersDir");
+        }
+    }
+    public function changeYamlData($data, $dir, $dirsFile, $key, $i = 0)
+    {
+        if ($i < count($data)) {
+            $keys = array_keys($data);
+            if ($data[$key] !== $dir) {
+                if ($i === 0) {
+                    $this->writeInYamlDirs($dirsFile, '', 'w');
+                }
+                $data[$key] = $dir;
+                static::$refactor = true;
             }
-            if(!$pars['jsonDef']) {
-                $this->writeInYamlDirs($fileDirs, "\njsonDef : $this->jsonPath");
+            if (self::$refactor) {
+                $activeKey = $keys[$i];
+                $this->writeInYamlDirs($dirsFile, "\n$activeKey : $data[$activeKey]", 'a');
+                return $this->changeYamlData($data, $dir, $dirsFile, $key, $i + 1);
             }
-            $this->checkAndCreateJsonDir($this->bg->setUserCacheCatalog($root));
-            $this->checkAndCreateJsonDir($this->usersDir);
-
+            return false;
         }
-
-            //TODO what is this
         else {
-            $this->usersDir = $this->bg->setUserCacheCatalog($root);
-            $this->checkAndCreateJsonDir($this->usersDir);
-        }
-        if ($temp_file !== null) {
-            $this->serverName = $_SERVER['SERVER_NAME'];
-            $this->protocol = $this->getProtocol();
-            $this->root = $root;
-            $this->tempDir = "$this->root/$temp_dir";
-            $this->tempFile = "$this->tempDir/$temp_file";
-            $this->viewDir = "$this->tempDir/views/";
-        }
-            //TODO what is this
-        else {
-            $this->ajaxData = $temp_dir;
+            return true;
         }
 
     }
@@ -170,7 +217,7 @@ abstract class Templater
     /**
      * @param $userCacheDir
      */
-    public function checkAndCreateJsonDir($userCacheDir)
+    public function checkAndCreateUsersDir($userCacheDir)
     {
         if (!is_dir($userCacheDir)) {
             @mkdir($userCacheDir);

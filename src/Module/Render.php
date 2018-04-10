@@ -8,7 +8,7 @@
 
 namespace Avir\Templater\Module;
 
-use Avir\Templater\Module\Helper;
+use Avir\Templater\Module\Ajax\AjaxHelper;
 use Symfony\Component\Yaml\Yaml;
 
 class Render extends Templater
@@ -60,7 +60,11 @@ class Render extends Templater
                 //Creating a cache file
             $this->copyWriteFile($fileName, $dataTwo);
         }
-        $cookie = $this->getCookie('test');
+        $cookieName = Config::$cookieName;
+        if (!$cookieName){
+            $cookieName = Config::setCookie();
+        }
+        $cookie = $this->getCookie($cookieName);
         if (!$this->userCacheCatalog || empty($cookie)){
                 //Require ready content file
             require $fileName;
@@ -83,18 +87,17 @@ class Render extends Templater
 
         $userCacheDir = $this->usersDir.'/'.$userDir;
 
-        $this->checkAndCreateJsonDir($userCacheDir);
-
-        $jsonName = $userCacheDir.'/'.'card.json';
-
-        $this->checkAndCreateJsonFile($jsonName, $this->jsonPath);
+            //Create user dir and card.json file
+        $this->checkAndCreateUsersDir($userCacheDir);
+        $jsonName = $userCacheDir.'/'.$this->cardJson;
+        $this->checkAndCreateJsonFile($this->jsonPath, $jsonName);
 
         $dataJson = json_decode(file_get_contents($jsonName));
 
-        $dataJson = json_encode($dataJson);
-        //$this->copyWriteFile($jsonName, $dataJson);
-        //var_dump(json_decode($dataJson));
-        //var_dump($jsonName);
+
+        var_dump($dataJson);
+
+
 
 
         $htmlData = shell_exec("php $file_name");
@@ -116,7 +119,7 @@ class Render extends Templater
      * @param $jsonName
      * @param $jsonPath
      */
-    public function checkAndCreateJsonFile($jsonName, $jsonPath)
+    public function checkAndCreateJsonFile($jsonPath, $jsonName)
     {
         if (!file_exists($jsonName)) {
             copy($jsonPath, $jsonName);
@@ -134,54 +137,8 @@ class Render extends Templater
 
     public function ajax()
     {
-            //Get data from ajax request
-        $data = json_decode($this->ajaxData['cookie']);
-
-            //User cookie name
-        $nameDir = $data->name->nameCookie->clear;
-
-            //Path for paths file
-        $yaml = __DIR__ . '/../../storage/dirs.yaml';
-
-            //Read paths file
-        $usersDir = (Yaml::parseFile($yaml))['userDir'];
-        $jsonPath = (Yaml::parseFile($yaml))['jsonDef'];
-
-            //User catalog name
-        $userDir = $usersDir.'/'.$nameDir;
-
-            //User card.json catalog
-        $this->checkAndCreateJsonDir($userDir);
-
-            //Form user card.json file
-        $userFileCard = $userDir.'/'.'card.json';
-        $this->checkAndCreateJsonFile($userFileCard,$jsonPath);
-        $userFileData = json_decode(file_get_contents($userFileCard));
-        if ($userFileData->info->name === 'Firstname_Lastname') {
-            $userFileData->info->codename = $data->name->nameCookie->encode;
-            $userFileData->info->name = $nameDir;
-        }
-
-        $userFileData = $this->formDate($data, $userFileData);
-
-        $currentPage = $this->getPageN($userFileData);
-        $pag = new \stdClass();
-        $host = $this->ajaxData['host'];
-            //
-        if(!$this->searchHost($userFileData, $host)) {
-
-            $pag->$host = $this->ajaxData['title'];
-            $userFileData->pages->$currentPage = $pag;
-            $userFileData->pages->count++;
-
-            $this->writeInJson($userFileCard, $userFileData);
-
-            return false;
-        }
-
-        $this->writeInJson($userFileCard, $userFileData);
-
-        return true;
+        $ajax = new AjaxHelper($this->ajaxData, null);
+        return $ajax->jsonHandler();
     }
 
     public function writeInJson($userFileCard, $userFileData)
