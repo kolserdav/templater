@@ -110,18 +110,23 @@ class Render extends Templater
 
     }
 
-    public function checkAndCreateJsonDir($userCacheDir)
-    {
-        if (!is_dir($userCacheDir)) {
-            @mkdir($userCacheDir);
-        }
-    }
+
+
+    /**
+     * @param $jsonName
+     * @param $jsonPath
+     */
     public function checkAndCreateJsonFile($jsonName, $jsonPath)
     {
         if (!file_exists($jsonName)) {
             copy($jsonPath, $jsonName);
         }
     }
+
+    /**
+     * @param $cookie_name
+     * @return bool|string
+     */
     public function getCookie($cookie_name)
     {
         return base64_decode($_COOKIE[$cookie_name]);
@@ -129,13 +134,26 @@ class Render extends Templater
 
     public function ajax()
     {
+            //Get data from ajax request
         $data = json_decode($this->ajaxData['cookie']);
+
+            //User cookie name
         $nameDir = $data->name->nameCookie->clear;
+
+            //Path for paths file
         $yaml = __DIR__ . '/../../storage/dirs.yaml';
+
+            //Read paths file
         $usersDir = (Yaml::parseFile($yaml))['userDir'];
         $jsonPath = (Yaml::parseFile($yaml))['jsonDef'];
+
+            //User catalog name
         $userDir = $usersDir.'/'.$nameDir;
+
+            //User card.json catalog
         $this->checkAndCreateJsonDir($userDir);
+
+            //Form user card.json file
         $userFileCard = $userDir.'/'.'card.json';
         $this->checkAndCreateJsonFile($userFileCard,$jsonPath);
         $userFileData = json_decode(file_get_contents($userFileCard));
@@ -143,26 +161,46 @@ class Render extends Templater
             $userFileData->info->codename = $data->name->nameCookie->encode;
             $userFileData->info->name = $nameDir;
         }
-        $firstVisit = $userFileData->info->firstVisit;
-        if ($firstVisit == 'Date') {
-            $userFileData->info->firstVisit = $data->name->time;
-        } else {
-            $userFileData->info->lastVisit = $data->name->time;
-        }
+
+        $userFileData = $this->formDate($data, $userFileData);
+
         $currentPage = $this->getPageN($userFileData);
         $pag = new \stdClass();
         $host = $this->ajaxData['host'];
-
+            //
         if(!$this->searchHost($userFileData, $host)) {
+
             $pag->$host = $this->ajaxData['title'];
             $userFileData->pages->$currentPage = $pag;
             $userFileData->pages->count++;
-            $res = fopen($userFileCard, 'w');
-            fwrite($res, json_encode($userFileData));
-            fclose($res);
+
+            $this->writeInJson($userFileCard, $userFileData);
+
             return false;
         }
+
+        $this->writeInJson($userFileCard, $userFileData);
+
         return true;
+    }
+
+    public function writeInJson($userFileCard, $userFileData)
+    {
+        $res = fopen($userFileCard, 'w');
+        fwrite($res, json_encode($userFileData));
+        fclose($res);
+    }
+
+    public function formDate($data, $userFileData)
+    {
+        $firstVisit = $userFileData->info->firstVisit;
+        if ($firstVisit == 'Date') {
+            $userFileData->info->firstVisit = $data->name->time;
+            $userFileData->info->lastVisit = $data->name->time;
+        } else {
+            $userFileData->info->lastVisit = $data->name->time;
+        }
+        return $userFileData;
     }
 
     public function getPageN($data)

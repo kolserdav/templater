@@ -1,2 +1,5 @@
+
+userCache : public/cache
+cache : var/cache
 userDir : C:\open\OSPanel\domains\other.domains\modules\templater/public/cache/users
 jsonDef : C:\open\OSPanel\domains\other.domains\modules\templater/storage/card.json

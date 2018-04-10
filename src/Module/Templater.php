@@ -35,12 +35,40 @@ abstract class Templater
      * @var string
      */
     public $root;
+
+    /**
+     * @var
+     */
     public $ajaxData;
+
+    /**
+     * @var string
+     */
     public $usersDir;
+
+    /**
+     * @var Background
+     */
     public $bg;
+
+    /**
+     * @var mixed
+     */
     public $protocol;
+
+    /**
+     * @var string
+     */
     public $serverName;
+
+    /**
+     * @var string
+     */
     public $userCacheCatalog;
+
+    /**
+     * @var string
+     */
     public $jsonPath;
 
 
@@ -54,48 +82,99 @@ abstract class Templater
     {
         $this->bg = new Background();
         $root = $this->getRoot();
-        $this->jsonPath = "$root/storage/card.json";
-        if ($users_dir !== null){
+        $fileDirs = $root. '/storage/dirs.yaml';
 
+        $pars = Yaml::parseFile($fileDirs);
+
+        $configUserCache = Config::$userCache;
+            //Writing cache dirs in yaml
+        if ($configUserCache && !$pars['userCache']){
+            $this->writeInYamlDirs($fileDirs, "\nuserCache : $configUserCache");
+        }
+        $configCache = Config::$cache;
+        if ($configCache && !$pars['cache']){
+            $this->writeInYamlDirs($fileDirs, "\ncache : $configCache");
+        }
+        if ($pars['userCache'] !== $configUserCache){
+            $pars['userCache'] = $configUserCache;
+
+           // $this->writeInYamlDirs($fileDirs, implode($pars), 'w');
+        }
+        if ($pars['cache'] !== Config::$cache){
+            $pars['cache'] = Config::$cache;
+           // $this->writeInYamlDirs($fileDirs, implode($pars), 'w');
+        }
+
+        $this->jsonPath = "$root/storage/card.json";
+
+            //Constructor for ajax request
+        if ($users_dir !== null){
+            $c = new Config();
+            $c->setConfig([
+                'cache' => $pars['cache'],
+                'userCache' => $pars['userCache']
+            ]);
             $this->usersDir = $this->bg->setUserCacheCatalog($root).'/'.$users_dir;
-            $fileDirs = $root. '/storage/dirs.yaml';
-            $pars = Yaml::parseFile($fileDirs);
+
             if(!$pars['userDir']) {
-                $res = fopen($fileDirs, 'a');
-                fwrite($res, "userDir : $this->usersDir");
-                fclose($res);
+                $this->writeInYamlDirs($fileDirs, "\nuserDir : $this->usersDir");
             }
             if(!$pars['jsonDef']) {
-                $res = fopen($fileDirs, 'a');
-                fwrite($res, "\njsonDef : $this->jsonPath");
-                fclose($res);
+                $this->writeInYamlDirs($fileDirs, "\njsonDef : $this->jsonPath");
             }
-            if (!is_dir($this->bg->setUserCacheCatalog($root))){
-                @mkdir($this->bg->setUserCacheCatalog($root));
-            }
-            if (!is_dir($this->usersDir)){
-                @mkdir($this->usersDir);
-            }
+            $this->checkAndCreateJsonDir($this->bg->setUserCacheCatalog($root));
+            $this->checkAndCreateJsonDir($this->usersDir);
 
         }
+
+            //TODO what is this
         else {
             $this->usersDir = $this->bg->setUserCacheCatalog($root);
-            if (!is_dir($this->usersDir)){
-                @mkdir($this->usersDir);
-            }
+            $this->checkAndCreateJsonDir($this->usersDir);
         }
         if ($temp_file !== null) {
             $this->serverName = $_SERVER['SERVER_NAME'];
-            $this->protocol = preg_replace('%\/\d*\.\d*%','', $_SERVER['SERVER_PROTOCOL']);
+            $this->protocol = $this->getProtocol();
             $this->root = $root;
             $this->tempDir = "$this->root/$temp_dir";
             $this->tempFile = "$this->tempDir/$temp_file";
             $this->viewDir = "$this->tempDir/views/";
         }
+            //TODO what is this
         else {
             $this->ajaxData = $temp_dir;
         }
 
+    }
+
+    /**
+     * @param $fileDirs
+     * @param $mode = 'a'
+     * @param $string
+     */
+    public function writeInYamlDirs($fileDirs, $string, $mode = 'a')
+    {
+        $res = fopen($fileDirs, $mode);
+        fwrite($res, $string);
+        fclose($res);
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getProtocol()
+    {
+        return preg_replace('%\/\d*\.\d*%','', $_SERVER['SERVER_PROTOCOL']);
+    }
+
+    /**
+     * @param $userCacheDir
+     */
+    public function checkAndCreateJsonDir($userCacheDir)
+    {
+        if (!is_dir($userCacheDir)) {
+            @mkdir($userCacheDir);
+        }
     }
 
     /**
