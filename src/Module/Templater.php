@@ -71,6 +71,7 @@ abstract class Templater
      */
     public $jsonPath;
     public $cardJson;
+    public $manifestPath;
     public  static $refactor;
 
 
@@ -85,6 +86,7 @@ abstract class Templater
 
          //File with paths
         $fileDirs = $root. '/storage/dirs.yaml';
+        $this->manifestPath = $root. '/storage/.manifest.appcache';
         $pars = Yaml::parseFile($fileDirs);
 
             //Construct
@@ -103,7 +105,7 @@ abstract class Templater
                 //Writing in yaml  user card.json file name
                 $fieldCardJson = 'cardJson';
                 if ($this->cardJson && !$pars[$fieldCardJson]) {
-                    $this->writeInYamlDirs($fileDirs, "\n$fieldCardJson : $this->cardJson");
+                    $this->writeInFile($fileDirs, "\n$fieldCardJson : $this->cardJson");
                 } //Custom change user card.json file name
                 else if ($pars[$fieldCardJson] !== $this->cardJson) {
                     $this->changeYamlData($pars, $this->cardJson, $fileDirs, $fieldCardJson);
@@ -120,17 +122,17 @@ abstract class Templater
 
                 //Writing typing card.json file in dirs.yaml
                 if (!$pars['jsonDef']) {
-                    $this->writeInYamlDirs($fileDirs, "\njsonDef : $this->jsonPath");
+                    $this->writeInFile($fileDirs, "\njsonDef : $this->jsonPath");
                 }
 
                 //Writing cache dir in yaml
                 if ($configUserCache && !$pars['userCache']) {
-                    $this->writeInYamlDirs($fileDirs, "\nuserCache : $configUserCache");
+                    $this->writeInFile($fileDirs, "\nuserCache : $configUserCache");
                 }
 
                 //Writing in yaml custom cache catalog
                 if ($configCache && !$pars['cache']) {
-                    $this->writeInYamlDirs($fileDirs, "\ncache : $configCache");
+                    $this->writeInFile($fileDirs, "\ncache : $configCache");
                 } //Custom change user cache catalog
                 else if ($pars['cache'] !== $configCache) {
                     $this->changeYamlData($pars, $configCache, $fileDirs, 'cache');
@@ -138,7 +140,7 @@ abstract class Templater
 
                 //Writing cache usersDir in yaml
                 if (!$pars['userDir']) {
-                    $this->writeInYamlDirs($fileDirs, "\nuserDir : $this->usersDir");
+                    $this->writeInFile($fileDirs, "\nuserDir : $this->usersDir");
                 } //Custom change users cache catalog
                 else if ($pars['userCache'] !== $configUserCache) {
                     $this->changeYamlData($pars, $configUserCache, $fileDirs, 'userCache');
@@ -176,14 +178,14 @@ abstract class Templater
             $keys = array_keys($data);
             if ($data[$key] !== $dir) {
                 if ($i === 0) {
-                    $this->writeInYamlDirs($dirsFile, '', 'w');
+                    $this->writeInFile($dirsFile, '', 'w');
                 }
                 $data[$key] = $dir;
                 static::$refactor = true;
             }
             if (self::$refactor) {
                 $activeKey = $keys[$i];
-                $this->writeInYamlDirs($dirsFile, "\n$activeKey : $data[$activeKey]", 'a');
+                $this->writeInFile($dirsFile, "\n$activeKey : $data[$activeKey]", 'a');
                 return $this->changeYamlData($data, $dir, $dirsFile, $key, $i + 1);
             }
             return false;
@@ -195,13 +197,13 @@ abstract class Templater
     }
 
     /**
-     * @param $fileDirs
+     * @param $filePath
      * @param $mode = 'a'
      * @param $string
      */
-    public function writeInYamlDirs($fileDirs, $string, $mode = 'a')
+    public function writeInFile($filePath, $string, $mode = 'a')
     {
-        $res = fopen($fileDirs, $mode);
+        $res = fopen($filePath, $mode);
         fwrite($res, $string);
         fclose($res);
     }

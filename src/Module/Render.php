@@ -13,7 +13,7 @@ use Symfony\Component\Yaml\Yaml;
 
 class Render extends Templater
 {
-    private static $y;
+    private $arrayManifest;
     /**
      * This is the module collector
      * @param array $files
@@ -71,7 +71,7 @@ class Render extends Templater
         }
         else {
 
-            $this->userCache($fileName);
+            $this->userCache($fileName, $dataTwo);
         }
         if ($cacheCatalog == '.') {
             unlink($fileName);
@@ -79,7 +79,7 @@ class Render extends Templater
         }
         return true;
     }
-    public function userCache($file_name)
+    public function userCache($fileName, $data)
     {
 
 
@@ -90,27 +90,93 @@ class Render extends Templater
             //Create user dir and card.json file
         $this->checkAndCreateUsersDir($userCacheDir);
         $jsonName = $userCacheDir.'/'.$this->cardJson;
-        $this->checkAndCreateJsonFile($this->jsonPath, $jsonName);
+        $this->checkAndCreateFile($this->jsonPath, $jsonName);
 
-        $dataJson = json_decode(file_get_contents($jsonName));
+            //Create user manifest file
+        $fileManifest = $userCacheDir.'/'.'.manifest.appcache';
+        $this->checkAndCreateFile($this->manifestPath, $fileManifest);
+        $manifestData = explode("\n", file_get_contents($fileManifest));
 
+            //Preprocessor the cache-file.html
+        if (preg_match('%\<\?%', $data)) {
+            $htmlData = shell_exec("php $fileName");
+        }
+        else {
+            $htmlData = $data;
+        }
 
-        var_dump($dataJson);
-
-
-
-
-        $htmlData = shell_exec("php $file_name");
+            //Getting cache file name
         $title = Helper::searchTitle($htmlData);
-
         if (!$title) {
             $htmlFileName = $this->getHtmlFileName($this->userCacheCatalog, $htmlData);
         } else {
             $htmlFileName = $this->getHtmlTitleFile($this->userCacheCatalog, $title);
         }
+
+            //Create user cache file
         $this->copyWriteFile($htmlFileName, $htmlData);
+
+            //Writing current page to file manifest
+        $this->readManifestFile($manifestData);
+        $addrPage = $this->addressPage($title);
+        if (!array_search($addrPage, $this->arrayManifest['CACHE:'])) {
+            $this->arrayManifest['CACHE:'][] = $addrPage;
+            $stringManifest = $this->manifestToString();
+            $this->writeInFile($fileManifest, $stringManifest, 'w');
+        }
+
+       //var_dump($this->arrayManifest);
+
+
+
         require $htmlFileName;
 
+    }
+
+
+    public function manifestToString()
+    {
+        $stringManifest['CACHE:'][] = implode("\n", $this->arrayManifest['CACHE:']);
+        $stringManifest['NETWORK:'][] = implode("\n",$this->arrayManifest['NETWORK:']);
+        $stringManifest['FALLBACK:'][] = implode("\n",$this->arrayManifest['FALLBACK:']);
+        $date = date('d.m.Y H:i:s');
+        return "CACHE MANIFEST\n"."# $date\n"."CACHE:\n".$stringManifest['CACHE:'][0].
+            "\nNETWORK:\n".$stringManifest['NETWORK:'][0]."\nFALLBACK:\n".$stringManifest['FALLBACK:'][0];
+    }
+
+    public function  addressPage($title)
+    {
+        preg_match('%\w*\/%', Config::$userCache, $m);
+        $cacheDir = str_replace($m[0], '', Config::$userCache);
+        return '/'.$cacheDir.'/pages/'.$title.".html";
+    }
+
+    public function readManifestFile($data, $array = array(), $i = 3, $y = 0)
+    {
+        $count = count($data);
+        $data[$i] = trim($data[$i]);
+        if ($data[$i] !== "NETWORK:" && $y === 0) {
+            $array["CACHE:"][] = $data[$i];
+            $this->readManifestFile($data, $array, $i + 1);
+        }
+        else if ($data[$i] === "NETWORK:" && $y === 0){
+            $this->readManifestFile($data, $array, $i + 1, 1);
+        }
+        else if ($y === 1 && $data[$i] !== "FALLBACK:"){
+            $array["NETWORK:"][] = $data[$i];
+            $this->readManifestFile($data, $array, $i + 1, 1);
+        }
+        else if ($data[$i] === "FALLBACK:" && $y === 1){
+            $this->readManifestFile($data, $array, $i + 1, 2);
+        }
+        else if ($y === 2 && $i < $count){
+            $array["FALLBACK:"][] = $data[$i];
+            $this->readManifestFile($data, $array,$i + 1, 2);
+        }
+        else if ($y === 2 && $i === $count){
+            $this->arrayManifest = $array;
+            return $array;
+        }
     }
 
 
@@ -119,7 +185,7 @@ class Render extends Templater
      * @param $jsonName
      * @param $jsonPath
      */
-    public function checkAndCreateJsonFile($jsonPath, $jsonName)
+    public function checkAndCreateFile($jsonPath, $jsonName)
     {
         if (!file_exists($jsonName)) {
             copy($jsonPath, $jsonName);

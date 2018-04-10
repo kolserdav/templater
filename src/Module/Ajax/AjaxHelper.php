@@ -32,12 +32,10 @@ class AjaxHelper extends Render
             //User catalog name
         $userDir = $usersDir.'/'.$nameDir;
 
-             //User card.json catalog
-        $this->checkAndCreateUsersDir($userDir);
 
             //Form user card.json file
         $userFileCard = $userDir.'/'.Config::$cardJson;
-        $this->checkAndCreateJsonFile($jsonPath, $userFileCard);
+        $this->checkAndCreateFile($jsonPath, $userFileCard);
         $userFileData = json_decode(file_get_contents($userFileCard));
         if ($userFileData->info->name === 'Firstname_Lastname') {
             $userFileData->info->codename = $data->name->nameCookie->encode;

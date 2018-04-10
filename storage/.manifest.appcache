@@ -1,8 +1,7 @@
 CACHE MANIFEST
-# 23-01-2015 v0.1
+# 11.04.2018
+CACHE:
 /cache/pages/Name.html
-
 NETWORK:
 *
-
 FALLBACK:
