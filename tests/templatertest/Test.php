@@ -8,9 +8,9 @@
 
 
 use PHPUnit\Framework\TestCase;
-use Avir\Templater\Background;
-use Avir\Templater\Render;
-use Avir\Templater\Config;
+use Avir\Templater\Module\Background;
+use Avir\Templater\Module\Render;
+use Avir\Templater\Module\Config;
 
 class Test extends TestCase
 {

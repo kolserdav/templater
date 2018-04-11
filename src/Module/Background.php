@@ -6,7 +6,7 @@
  * Time: 22:41
  */
 
-namespace Avir\Templater;
+namespace Avir\Templater\Module;
 
 
 class Background extends Config
@@ -220,16 +220,29 @@ class Background extends Config
 
     /**
      * @param string $root
+     * @param bool $pages
      * @return string
      */
-    public function setUserCacheCatalog(string $root): string
+    public function setUserCacheCatalog(string $root, $pages = false): string
     {
-        if (parent::$userCache){
-            return $root.'/'.parent::$userCache;
+        if ($pages){
+            if (parent::$userCache) {
+                return $root . '/' . parent::$userCache.'/pages';
+            } else {
+                return false;
+            }
         }
         else {
-            return false;
+            if (parent::$userCache) {
+                return $root . '/' . parent::$userCache;
+            } else {
+                return false;
+            }
         }
+    }
+    public function getUserCacheCatalog()
+    {
+        return parent::$userCache;
     }
 
     /**

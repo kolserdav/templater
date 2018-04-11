@@ -1,0 +1,32 @@
+{
+  "name": "templater",
+  "version": "1.0.0",
+  "description": "template engine",
+  "main": "js/index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "dependencies": {
+    "ajaxsim": "^1.0.0",
+    "dist-cookie": "^0.0.7"
+  },
+  "devDependencies": {
+    "webpack": "^4.5.0"
+  },
+  "scripts": {
+    "test": "echo Test complete"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kolserdav/templater.git"
+  },
+  "keywords": [
+    "template"
+  ],
+  "author": "Sergey <serega12101983@gmail.com> (https://github.com/kolserdav)",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/kolserdav/templater/issues"
+  },
+  "homepage": "https://github.com/kolserdav/templater#readme"
+}

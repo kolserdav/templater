@@ -6,7 +6,7 @@
  * Time: 16:41
  */
 
-namespace Avir\Templater;
+namespace Avir\Templater\Module;
 
 
 class Helper
@@ -395,6 +395,16 @@ class Helper
         }
         else {
             return str_replace('for_', '', $key);
+        }
+    }
+
+    public static function searchTitle($data)
+    {
+        if (!preg_match('%\<title\>.*\<\/title\>%', $data, $res)){
+            return false;
+        }
+        else {
+            return trim(str_replace(['<','>','/','title'], '', $res[0]));
         }
     }
 }

@@ -1,0 +1,14 @@
+{
+  "info" : {
+    "name" : "Firstname_Lastname",
+    "codename" : "code1CODE2cOdE3=",
+    "firstVisit" : "Date",
+    "lastVisit" : "Date"
+  },
+  "pages" : {
+    "count" : 0,
+    "page-0" : {
+      "test/path" : "test/title"
+    }
+  }
+}
