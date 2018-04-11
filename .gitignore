@@ -1,9 +1,9 @@
 vendor 
 .idea/ 
 composer.lock
-index.php
-src/examples/
+src/Controller/
 node_modules/
 public/
 package-lock.json
 config/
+var/

@@ -105,6 +105,7 @@ class Render extends Templater
             $htmlData = $data;
         }
 
+
             //Getting cache file name
         $title = Helper::searchTitle($htmlData);
         if (!$title) {
@@ -112,9 +113,6 @@ class Render extends Templater
         } else {
             $htmlFileName = $this->getHtmlTitleFile($this->userCacheCatalog, $title);
         }
-
-            //Create user cache file
-        $this->copyWriteFile($htmlFileName, $htmlData);
 
             //Writing current page to file manifest
         $this->readManifestFile($manifestData);
@@ -124,13 +122,35 @@ class Render extends Templater
             $stringManifest = $this->manifestToString();
             $this->writeInFile($fileManifest, $stringManifest, 'w');
         }
+            //TODO what is this
+            //Writing in
+            //Getting the html manifest string
+        $userManifest = $this->getUserCatalogUrl($userDir).'/.manifest.appcache';
 
-       //var_dump($this->arrayManifest);
+            //Getting the user card.json file url
+        $userJsonUrl = $this->getUserCatalogUrl($userDir).'/card.json';
+
+           //Add the user manifest tag
+        //$htmlData = str_replace('<html>', "<html manifest=\"$userManifest\">", $htmlData);
+
+            //Add the file json tag
+        $script = "<script type=\"text/x-json\" src=$userJsonUrl></script>";
+        preg_match('%\<script\s*src\=https?\:\/\/\w*\.\w*\/\w*\.js\><\/script\>%', $htmlData, $m);
+        $htmlData = str_replace($m[0], "\n$script\n$m[0]", $htmlData);
+
+            //Create the user cache file
+        $this->copyWriteFile($htmlFileName, $htmlData);
+
+
 
 
 
         require $htmlFileName;
 
+    }
+    public function getUserCatalogUrl($userDir)
+    {
+        return $this->protocol.'://'.$this->serverName.'/'.$this->cacheDir().'/'.Config::$usersDir.'/'.$userDir;
     }
 
 
@@ -146,9 +166,13 @@ class Render extends Templater
 
     public function  addressPage($title)
     {
-        preg_match('%\w*\/%', Config::$userCache, $m);
-        $cacheDir = str_replace($m[0], '', Config::$userCache);
+        $cacheDir = $this->cacheDir();
         return '/'.$cacheDir.'/pages/'.$title.".html";
+    }
+    public function cacheDir()
+    {
+        preg_match('%\w*\/%', Config::$userCache, $m);
+        return str_replace($m[0], '', Config::$userCache);
     }
 
     public function readManifestFile($data, $array = array(), $i = 3, $y = 0)
@@ -203,6 +227,9 @@ class Render extends Templater
 
     public function ajax()
     {
+        if ($this->ajaxData['load']){
+            var_dump(1);
+        }
         $ajax = new AjaxHelper($this->ajaxData, null);
         return $ajax->jsonHandler();
     }
@@ -268,10 +295,10 @@ class Render extends Templater
     {
         return $user_cache_catalog.'/'.md5($file_cache).'.html';
     }
-    public function copyWriteFile($file_name, $data)
+    public function copyWriteFile($fileName, $data, $mode = 'w')
     {
         try{
-            if (!@copy($this->tempFile, $file_name)){
+            if (!@copy($this->tempFile, $fileName)){
                 throw new \Exception("Please check on the path correctness in 'setConfig' function attributes.");
             }
         }
@@ -279,7 +306,7 @@ class Render extends Templater
             echo $e->getMessage();
             exit();
         }
-        $res = fopen($file_name, 'w');
+        $res = fopen($fileName, $mode);
         fwrite($res, $data);
         fclose($res);
     }

