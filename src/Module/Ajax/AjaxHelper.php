@@ -14,7 +14,10 @@ use Avir\Templater\Module\Config;
 
 class AjaxHelper extends Render
 {
-    public function jsonHandler()
+    /**
+     * @return bool
+     */
+    public function jsonHandler(): bool
     {
             //Get data from ajax request
         $data = json_decode($this->ajaxData['cookie']);

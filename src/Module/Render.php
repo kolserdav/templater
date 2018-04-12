@@ -131,7 +131,7 @@ class Render extends Templater
         $userJsonUrl = $this->getUserCatalogUrl($userDir).'/card.json';
 
            //Add the user manifest tag
-        //$htmlData = str_replace('<html>', "<html manifest=\"$userManifest\">", $htmlData);
+       // $htmlData = str_replace('<html>', "<html manifest=\"$userManifest\">", $htmlData);
 
             //Add the file json tag
         $script = "<script type=\"text/x-json\" src=$userJsonUrl></script>";
@@ -148,12 +148,20 @@ class Render extends Templater
         require $htmlFileName;
 
     }
-    public function getUserCatalogUrl($userDir)
+
+    /**
+     * @param string $userDir
+     * @return string
+     */
+    public function getUserCatalogUrl(string $userDir): string
     {
         return $this->protocol.'://'.$this->serverName.'/'.$this->cacheDir().'/'.Config::$usersDir.'/'.$userDir;
     }
 
 
+    /**
+     * @return string
+     */
     public function manifestToString()
     {
         $stringManifest['CACHE:'][] = implode("\n", $this->arrayManifest['CACHE:']);
@@ -164,18 +172,33 @@ class Render extends Templater
             "\nNETWORK:\n".$stringManifest['NETWORK:'][0]."\nFALLBACK:\n".$stringManifest['FALLBACK:'][0];
     }
 
-    public function  addressPage($title)
+    /**
+     * @param string $title
+     * @return string
+     */
+    public function  addressPage(string $title): string
     {
         $cacheDir = $this->cacheDir();
         return '/'.$cacheDir.'/pages/'.$title.".html";
     }
-    public function cacheDir()
+
+    /**
+     * @return string
+     */
+    public function cacheDir(): string
     {
         preg_match('%\w*\/%', Config::$userCache, $m);
         return str_replace($m[0], '', Config::$userCache);
     }
 
-    public function readManifestFile($data, $array = array(), $i = 3, $y = 0)
+    /**
+     * @param array $data
+     * @param array $array
+     * @param int $i
+     * @param int $y
+     * @return array
+     */
+    public function readManifestFile(array $data, array $array = array(), int $i = 3, int $y = 0)
     {
         $count = count($data);
         $data[$i] = trim($data[$i]);
@@ -206,25 +229,34 @@ class Render extends Templater
 
 
     /**
-     * @param $jsonName
+     * @param $fileName
      * @param $jsonPath
+     * @return  bool
      */
-    public function checkAndCreateFile($jsonPath, $jsonName)
+    public function checkAndCreateFile(string $jsonPath, string $fileName): bool
     {
-        if (!file_exists($jsonName)) {
-            copy($jsonPath, $jsonName);
+        if (!file_exists($fileName)) {
+            copy($jsonPath, $fileName);
+            return true;
+        }
+        else {
+            return false;
         }
     }
 
     /**
-     * @param $cookie_name
+     * @param $cookieName
      * @return bool|string
      */
-    public function getCookie($cookie_name)
+    public function getCookie($cookieName)
     {
-        return base64_decode($_COOKIE[$cookie_name]);
+        return base64_decode($_COOKIE[$cookieName]);
     }
 
+    /**
+     * Ajax request method
+     * @return bool
+     */
     public function ajax()
     {
         if ($this->ajaxData['load']){
@@ -234,13 +266,22 @@ class Render extends Templater
         return $ajax->jsonHandler();
     }
 
-    public function writeInJson($userFileCard, $userFileData)
+    /**
+     * @param string $userFileCard
+     * @param \stdClass $userFileData
+     */
+    public function writeInJson(string $userFileCard, \stdClass $userFileData)
     {
         $res = fopen($userFileCard, 'w');
         fwrite($res, json_encode($userFileData));
         fclose($res);
     }
 
+    /**
+     * @param mixed $data
+     * @param mixed $userFileData
+     * @return mixed
+     */
     public function formDate($data, $userFileData)
     {
         $firstVisit = $userFileData->info->firstVisit;
@@ -253,12 +294,23 @@ class Render extends Templater
         return $userFileData;
     }
 
-    public function getPageN($data)
+    /**
+     * @param mixed $data
+     * @return string
+     */
+    public function getPageN($data):string
     {
         return 'page-'.$data->pages->count;
     }
 
-    public function searchHost($data, $host, $i = 0, $y = 0)
+    /**
+     * @param mixed $data
+     * @param string $host
+     * @param int $i
+     * @param int $y
+     * @return bool
+     */
+    public function searchHost(\stdClass $data, string $host, int $i = 0, int $y = 0): bool
     {
         $page = 'page-'.$i;
         if ($i < $data->pages->count){
@@ -311,8 +363,13 @@ class Render extends Templater
         fclose($res);
     }
 
-    public function getHtmlTitleFile($user_cache_catalog, $title)
+    /**
+     * @param string $userCacheCatalog
+     * @param string $title
+     * @return string
+     */
+    public function getHtmlTitleFile(string $userCacheCatalog, string $title): string
     {
-        return $user_cache_catalog.'/'.$title.'.html';
+        return $userCacheCatalog.'/'.$title.'.html';
     }
 }
