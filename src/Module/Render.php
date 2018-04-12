@@ -9,7 +9,6 @@
 namespace Avir\Templater\Module;
 
 use Avir\Templater\Module\Ajax\AjaxHelper;
-use Symfony\Component\Yaml\Yaml;
 
 class Render extends Templater
 {
@@ -88,7 +87,7 @@ class Render extends Templater
         $userCacheDir = $this->usersDir.'/'.$userDir;
 
             //Create user dir and card.json file
-        $this->checkAndCreateUsersDir($userCacheDir);
+        $this->checkAndCreateDir($userCacheDir);
         $jsonName = $userCacheDir.'/'.$this->cardJson;
         $this->checkAndCreateFile($this->jsonPath, $jsonName);
 
@@ -110,7 +109,21 @@ class Render extends Templater
         $title = Helper::searchTitle($htmlData);
         if (!$title) {
             $htmlFileName = $this->getHtmlFileName($this->userCacheCatalog, $htmlData);
-        } else {
+        }
+        else {
+            $cacheAliases = $this->userCacheCatalog.'/aliases/';
+            $aliasesFile = $cacheAliases.'data-urls.json';
+            if($this->checkAndCreateDir($cacheAliases)){
+                $this->checkAndCreateFile($this->jsonPath, $aliasesFile);
+            }
+            else {
+                $dataUrls = json_decode(file_get_contents($aliasesFile));
+                if($dataUrls->pages->count > 0){
+
+                    var_dump($dataUrls->pages->page-0);
+                };
+                //$this->searchHost($dataUrls, )
+            }
             $htmlFileName = $this->getHtmlTitleFile($this->userCacheCatalog, $title);
         }
 
@@ -122,8 +135,7 @@ class Render extends Templater
             $stringManifest = $this->manifestToString();
             $this->writeInFile($fileManifest, $stringManifest, 'w');
         }
-            //TODO what is this
-            //Writing in
+
             //Getting the html manifest string
         $userManifest = $this->getUserCatalogUrl($userDir).'/.manifest.appcache';
 
@@ -131,21 +143,18 @@ class Render extends Templater
         $userJsonUrl = $this->getUserCatalogUrl($userDir).'/card.json';
 
            //Add the user manifest tag
-       // $htmlData = str_replace('<html>', "<html manifest=\"$userManifest\">", $htmlData);
+        //$htmlData = str_replace('<html>', "<html manifest=\"$userManifest\">", $htmlData);
 
             //Add the file json tag
         $script = "<script type=\"text/x-json\" src=$userJsonUrl></script>";
         preg_match('%\<script\s*src\=https?\:\/\/\w*\.\w*\/\w*\.js\><\/script\>%', $htmlData, $m);
-        $htmlData = str_replace($m[0], "\n$script\n$m[0]", $htmlData);
+        $htmlDataUser = str_replace($m[0], "\n$script\n$m[0]", $htmlData);
 
+        echo $htmlDataUser;
             //Create the user cache file
         $this->copyWriteFile($htmlFileName, $htmlData);
 
-
-
-
-
-        require $htmlFileName;
+        //require $htmlFileName;
 
     }
 
@@ -196,7 +205,7 @@ class Render extends Templater
      * @param array $array
      * @param int $i
      * @param int $y
-     * @return array
+     * @return array|bool
      */
     public function readManifestFile(array $data, array $array = array(), int $i = 3, int $y = 0)
     {
@@ -224,6 +233,7 @@ class Render extends Templater
             $this->arrayManifest = $array;
             return $array;
         }
+        return false;
     }
 
 
@@ -335,17 +345,17 @@ class Render extends Templater
 
 
     /**
-     * @param $cache_catalog string
-     * @param $file_cache string
+     * @param $cacheCatalog string
+     * @param $fileCache string
      * @return string
      */
-    public function getFileName(string $cache_catalog, string $file_cache): string
+    public function getFileName(string $cacheCatalog, string $fileCache): string
     {
-        return $cache_catalog.'/'.md5($file_cache).'.php';
+        return $cacheCatalog.'/'.md5($fileCache).'.php';
     }
-    public function getHtmlFileName(string $user_cache_catalog, string $file_cache): string
+    public function getHtmlFileName(string $userCacheCatalog, string $fileCache): string
     {
-        return $user_cache_catalog.'/'.md5($file_cache).'.html';
+        return $userCacheCatalog.'/'.md5($fileCache).'.html';
     }
     public function copyWriteFile($fileName, $data, $mode = 'w')
     {

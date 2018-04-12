@@ -125,6 +125,12 @@ abstract class Templater
                     $this->writeInFile($fileDirs, "\njsonDef : $this->jsonPath");
                 }
 
+                //Writing the aliases file data-urls.json in dirs.yaml
+                if (!$pars['dataUrls']) {
+                    $aliasesFile = $root.'/'.Config::$userCache.'/pages/aliases/data-urls.json';
+                    $this->writeInFile($fileDirs, "\ndataUrls : $aliasesFile");
+                }
+
                 //Writing cache dir in yaml
                 if ($configUserCache && !$pars['userCache']) {
                     $this->writeInFile($fileDirs, "\nuserCache : $configUserCache");
@@ -147,7 +153,7 @@ abstract class Templater
                 }
 
                 //Create users dir
-                $this->checkAndCreateUsersDir($this->usersDir);
+                $this->checkAndCreateDir($this->usersDir);
             }
             if ($temp_dir) {
 
@@ -217,12 +223,17 @@ abstract class Templater
     }
 
     /**
-     * @param $userCacheDir
+     * @param $dir
+     * @return bool
      */
-    public function checkAndCreateUsersDir($userCacheDir)
+    public function checkAndCreateDir($dir)
     {
-        if (!is_dir($userCacheDir)) {
-            @mkdir($userCacheDir);
+        if (!is_dir($dir)) {
+            @mkdir($dir);
+            return true;
+        }
+        else {
+            return false;
         }
     }
 

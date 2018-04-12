@@ -4,3 +4,4 @@ cache : var/cache
 userDir : C:\open\OSPanel\domains\other.domains\modules\templater/public/cache/users
 jsonDef : C:\open\OSPanel\domains\other.domains\modules\templater/storage/card.json
 cardJson : card.json
+dataUrls : C:\open\OSPanel\domains\other.domains\modules\templater/public/cache/pages/aliases/data-urls.json
