@@ -9,6 +9,7 @@
 namespace Avir\Templater\Module;
 
 use Avir\Templater\Module\Ajax\AjaxHelper;
+use Symfony\Component\Yaml\Yaml;
 
 class Render extends Templater
 {
@@ -91,6 +92,13 @@ class Render extends Templater
         $jsonName = $userCacheDir.'/'.$this->cardJson;
         $this->checkAndCreateFile($this->jsonPath, $jsonName);
 
+            //Create the user offline page
+        $userOfflineHtml = $userCacheDir.'/offline.html';
+        if (!file_exists($userOfflineHtml)) {
+            @copy($this->offlinePage, $userOfflineHtml);
+        }
+        $offlineData = file_get_contents($userOfflineHtml);
+
             //Create user manifest file
         $fileManifest = $userCacheDir.'/'.'.manifest.appcache';
         $this->checkAndCreateFile($this->manifestPath, $fileManifest);
@@ -123,12 +131,13 @@ class Render extends Templater
                     $host = strtolower($this->protocol).'://'.$this->serverName.$_SERVER['REQUEST_URI'];
                     $res = $this->searchHostInUrls($dataUrls, $host, $title);
 
+                        //Adding a prefix for title and the cache file name.
                     if ($res !== false) {
-                        $page = 'page-'.$res;
-                        $old = get_object_vars($dataUrls->pages->$page);
-                        $r = array_diff_assoc($old, [$host => $title]);
-                        var_dump($r);
-
+                        preg_match('%\D*%', $host, $m);
+                        $res = str_replace($m[0], '', $host);
+                        $titleNew = $title."-$res";
+                        $htmlData = str_replace($title, $titleNew, $htmlData);
+                        $title = $titleNew;
                     }
                 }
 
@@ -136,11 +145,31 @@ class Render extends Templater
             $htmlFileName = $this->getHtmlTitleFile($this->userCacheCatalog, $title);
         }
 
+            //Getting the user card.json file url
+        $userJsonUrl = $this->getUserCatalogUrl($userDir).'/card.json';
+
             //Writing current page to file manifest
         $this->readManifestFile($manifestData);
         $addrPage = $this->addressPage($title);
+
+        preg_match('%\<script\s*src\=https?\:\/\/\w*\.\w*\/\w*\.js\><\/script\>%', $htmlData, $mn);
+        $scriptFile = $mn[0];
+        $fileJs = trim(str_replace(['<', 'script', 'src', '=', '>', '/>' ],'', $scriptFile), '/');
+
+            //Adding a pages in the manifest file user
         if (!array_search($addrPage, $this->arrayManifest['CACHE:'])) {
             $this->arrayManifest['CACHE:'][] = $addrPage;
+            if (!array_search($userJsonUrl, $this->arrayManifest['CACHE:'])) {
+                $this->arrayManifest['CACHE:'][] = $userJsonUrl;
+            }
+            if (!array_search($fileJs, $this->arrayManifest['CACHE:'])) {
+                $this->arrayManifest['CACHE:'][] = $fileJs;
+            }
+            $urlOffline = $this->getUserCatalogUrl($userDir).'/offline.html';
+            if (!array_search($urlOffline, $this->arrayManifest['CACHE:'])) {
+                $this->arrayManifest['CACHE:'][] = $urlOffline;
+            }
+
             $stringManifest = $this->manifestToString();
             $this->writeInFile($fileManifest, $stringManifest, 'w');
         }
@@ -148,20 +177,33 @@ class Render extends Templater
             //Getting the html manifest string
         $userManifest = $this->getUserCatalogUrl($userDir).'/.manifest.appcache';
 
-            //Getting the user card.json file url
-        $userJsonUrl = $this->getUserCatalogUrl($userDir).'/card.json';
 
            //Add the user manifest tag
-        //$htmlData = str_replace('<html>', "<html manifest=\"$userManifest\">", $htmlData);
+        $htmlDataU = str_replace('<html>', "<html manifest=\"$userManifest\">", $htmlData);
+
+        //Add the user manifest tag in offline page
+        $offlineData = str_replace('<html>', "<html manifest=\"$userManifest\">", $offlineData);
 
             //Add the file json tag
         $script = "<script type=\"text/x-json\" src=$userJsonUrl></script>";
         preg_match('%\<script\s*src\=https?\:\/\/\w*\.\w*\/\w*\.js\><\/script\>%', $htmlData, $m);
-        $htmlDataUser = str_replace($m[0], "\n$script\n$m[0]", $htmlData);
+        $htmlDataUser = str_replace($m[0], "\n$script\n$m[0]", $htmlDataU);
+
+        //Add the file json tag in offline page
+        preg_match('%\<script\>json\<\/script\>%', $offlineData, $m);
+        $offlineData = str_replace($m[0], "\n$script\n", $offlineData);
+
+        //Add the file js tag in offline page
+        preg_match('%\<script\>js\<\/script\>%', $offlineData, $m);
+        $offlineData = str_replace($m[0], "\n$scriptFile\n", $offlineData);
 
         echo $htmlDataUser;
+
             //Create the user cache file
         $this->copyWriteFile($htmlFileName, $htmlData);
+
+            //Create the user offline file
+        $this->copyWriteFile($userOfflineHtml, $offlineData);
 
         //require $htmlFileName;
 
