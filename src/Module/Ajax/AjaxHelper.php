@@ -57,6 +57,10 @@ class AjaxHelper extends Render
             $userFileData->info->codename = $data->name->nameCookie->encode;
             $userFileData->info->name = $nameDir;
         }
+        if ($nameDir === 'All_Users'){
+            $userFileData->info->codename = base64_encode($nameDir);
+            $userFileData->info->name = $nameDir;
+        }
         $userFileData = $this->formDate($data, $userFileData);
         $currentPage = $this->getPageN($userFileData);
         $pag = new \stdClass();

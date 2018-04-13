@@ -120,9 +120,18 @@ class Render extends Templater
                 $dataUrls = json_decode(file_get_contents($aliasesFile));
                 if($dataUrls->pages->count > 0){
 
-                    var_dump($dataUrls->pages->page-0);
-                };
-                //$this->searchHost($dataUrls, )
+                    $host = strtolower($this->protocol).'://'.$this->serverName.$_SERVER['REQUEST_URI'];
+                    $res = $this->searchHostInUrls($dataUrls, $host, $title);
+
+                    if ($res !== false) {
+                        $page = 'page-'.$res;
+                        $old = get_object_vars($dataUrls->pages->$page);
+                        $r = array_diff_assoc($old, [$host => $title]);
+                        var_dump($r);
+
+                    }
+                }
+
             }
             $htmlFileName = $this->getHtmlTitleFile($this->userCacheCatalog, $title);
         }
@@ -156,6 +165,35 @@ class Render extends Templater
 
         //require $htmlFileName;
 
+    }
+
+    public function searchHostInUrls($data, $host, $title, $i = 0)
+    {
+        $page = 'page-'.$i;
+        if ($i < $data->pages->count) {
+            $prop = get_object_vars($data->pages->$page);
+            if ($prop){
+                $key = (array_keys($prop))[0];
+                if ($prop[$key] == $title){
+                    if (property_exists($data->pages->$page, $host)){
+                        return $this->searchHostInUrls($data, $host, $title, $i + 1);
+                    }
+                    else {
+                        return $i;
+                    }
+                }
+                else {
+                    return $this->searchHostInUrls($data, $host, $title, $i + 1);
+                }
+            }
+            else {
+                $this->searchHostInUrls($data, $host, $title, $i + 1);
+            }
+
+        }
+        else {
+            return false;
+        }
     }
 
     /**
