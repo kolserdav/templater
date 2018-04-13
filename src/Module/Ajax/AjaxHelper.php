@@ -14,12 +14,16 @@ use Avir\Templater\Module\Config;
 
 class AjaxHelper extends Render
 {
-    public function jsonHandler()
+    /**
+     * @return bool
+     */
+    public function jsonHandler(): bool
     {
+
             //Get data from ajax request
         $data = json_decode($this->ajaxData['cookie']);
 
-            //User cookie name
+             //User cookie name
         $nameDir = $data->name->nameCookie->clear;
 
             //Path for paths file
@@ -36,9 +40,25 @@ class AjaxHelper extends Render
             //Form user card.json file
         $userFileCard = $userDir.'/'.Config::$cardJson;
         $this->checkAndCreateFile($jsonPath, $userFileCard);
+        $aliasesFile = (Yaml::parseFile($yaml))['dataUrls'];
+
+            //Write in all users file
+        $this->formJsonFile($data, $aliasesFile);
+
+            //Write in the user file
+        return $this->formJsonFile($data, $userFileCard, $nameDir);
+    }
+
+    public function formJsonFile($data, $userFileCard, $nameDir = 'All_Users')
+    {
+
         $userFileData = json_decode(file_get_contents($userFileCard));
         if ($userFileData->info->name === 'Firstname_Lastname') {
             $userFileData->info->codename = $data->name->nameCookie->encode;
+            $userFileData->info->name = $nameDir;
+        }
+        if ($nameDir === 'All_Users'){
+            $userFileData->info->codename = base64_encode($nameDir);
             $userFileData->info->name = $nameDir;
         }
         $userFileData = $this->formDate($data, $userFileData);
@@ -58,4 +78,5 @@ class AjaxHelper extends Render
 
         return true;
     }
+
 }

@@ -72,6 +72,7 @@ abstract class Templater
     public $jsonPath;
     public $cardJson;
     public $manifestPath;
+    public $offlinePage;
     public  static $refactor;
 
 
@@ -86,16 +87,22 @@ abstract class Templater
 
          //File with paths
         $fileDirs = $root. '/storage/dirs.yaml';
+        $this->offlinePage = $root. '/storage/offline.html';
         $this->manifestPath = $root. '/storage/.manifest.appcache';
         $pars = Yaml::parseFile($fileDirs);
 
             //Construct
         if ($temp_file !== null){
 
+            $configCache = Config::$cache;
+            if (Config::$cache) {
+                //Create the cache catalog
+                $this->checkAndCreateDir($root . '/' . $configCache);
+            }
+
                 //User cache construct
             if (Config::$userCache) {
                 $this->bg = new Background();
-                $configCache = Config::$cache;
                 $usersDir = Config::$usersDir;
                 $this->cardJson = Config::$cardJson;
                 if (!$this->cardJson) {
@@ -111,8 +118,11 @@ abstract class Templater
                     $this->changeYamlData($pars, $this->cardJson, $fileDirs, $fieldCardJson);
                 }
 
-                //$root/$configUserCache/$prefixUsersDir
-                $this->usersDir = $this->bg->setUserCacheCatalog($root) . '/' . $usersDir;
+                    //User cache catalog
+                $userCache = $this->bg->setUserCacheCatalog($root);
+
+                     //$root/$configUserCache/$prefixUsersDir
+                $this->usersDir =  $userCache. '/' . $usersDir;
 
                 //Typing card.json file
                 $this->jsonPath = "$root/storage/$this->cardJson";
@@ -125,6 +135,17 @@ abstract class Templater
                     $this->writeInFile($fileDirs, "\njsonDef : $this->jsonPath");
                 }
 
+                //Writing the typing offline.html file in dirs.yaml
+                if (!$pars['offline']) {
+                    $this->writeInFile($fileDirs, "\noffline : $this->offlinePage");
+                }
+
+                //Writing the aliases file data-urls.json in dirs.yaml
+                if (!$pars['dataUrls']) {
+                    $aliasesFile = $root.'/'.Config::$userCache.'/pages/aliases/data-urls.json';
+                    $this->writeInFile($fileDirs, "\ndataUrls : $aliasesFile");
+                }
+
                 //Writing cache dir in yaml
                 if ($configUserCache && !$pars['userCache']) {
                     $this->writeInFile($fileDirs, "\nuserCache : $configUserCache");
@@ -133,7 +154,8 @@ abstract class Templater
                 //Writing in yaml custom cache catalog
                 if ($configCache && !$pars['cache']) {
                     $this->writeInFile($fileDirs, "\ncache : $configCache");
-                } //Custom change user cache catalog
+                }
+                    //Custom change user cache catalog
                 else if ($pars['cache'] !== $configCache) {
                     $this->changeYamlData($pars, $configCache, $fileDirs, 'cache');
                 }
@@ -146,8 +168,14 @@ abstract class Templater
                     $this->changeYamlData($pars, $configUserCache, $fileDirs, 'userCache');
                 }
 
-                //Create users dir
-                $this->checkAndCreateUsersDir($this->usersDir);
+                    //Create user cache catalog
+                $this->checkAndCreateDir($userCache);
+
+                    //Create pages dir
+                $this->checkAndCreateDir($userCache.'/pages');
+
+                    //Create users dir
+                $this->checkAndCreateDir($this->usersDir);
             }
             if ($temp_dir) {
 
@@ -217,12 +245,17 @@ abstract class Templater
     }
 
     /**
-     * @param $userCacheDir
+     * @param $dir
+     * @return bool
      */
-    public function checkAndCreateUsersDir($userCacheDir)
+    public function checkAndCreateDir($dir)
     {
-        if (!is_dir($userCacheDir)) {
-            @mkdir($userCacheDir);
+        if (!is_dir($dir)) {
+            @mkdir($dir);
+            return true;
+        }
+        else {
+            return false;
         }
     }
 

@@ -88,9 +88,16 @@ class Render extends Templater
         $userCacheDir = $this->usersDir.'/'.$userDir;
 
             //Create user dir and card.json file
-        $this->checkAndCreateUsersDir($userCacheDir);
+        $this->checkAndCreateDir($userCacheDir);
         $jsonName = $userCacheDir.'/'.$this->cardJson;
         $this->checkAndCreateFile($this->jsonPath, $jsonName);
+
+            //Create the user offline page
+        $userOfflineHtml = $userCacheDir.'/offline.html';
+        if (!file_exists($userOfflineHtml)) {
+            @copy($this->offlinePage, $userOfflineHtml);
+        }
+        $offlineData = file_get_contents($userOfflineHtml);
 
             //Create user manifest file
         $fileManifest = $userCacheDir.'/'.'.manifest.appcache';
@@ -110,50 +117,140 @@ class Render extends Templater
         $title = Helper::searchTitle($htmlData);
         if (!$title) {
             $htmlFileName = $this->getHtmlFileName($this->userCacheCatalog, $htmlData);
-        } else {
+        }
+        else {
+            $cacheAliases = $this->userCacheCatalog.'/aliases/';
+            $aliasesFile = $cacheAliases.'data-urls.json';
+            if($this->checkAndCreateDir($cacheAliases)){
+                $this->checkAndCreateFile($this->jsonPath, $aliasesFile);
+            }
+            else {
+                $dataUrls = json_decode(file_get_contents($aliasesFile));
+                if($dataUrls->pages->count > 0){
+
+                    $host = strtolower($this->protocol).'://'.$this->serverName.$_SERVER['REQUEST_URI'];
+                    $res = $this->searchHostInUrls($dataUrls, $host, $title);
+
+                        //Adding a prefix for title and the cache file name.
+                    if ($res !== false) {
+                        preg_match('%\D*%', $host, $m);
+                        $res = str_replace($m[0], '', $host);
+                        $titleNew = $title."-$res";
+                        $htmlData = str_replace($title, $titleNew, $htmlData);
+                        $title = $titleNew;
+                    }
+                }
+
+            }
             $htmlFileName = $this->getHtmlTitleFile($this->userCacheCatalog, $title);
         }
-
-            //Writing current page to file manifest
-        $this->readManifestFile($manifestData);
-        $addrPage = $this->addressPage($title);
-        if (!array_search($addrPage, $this->arrayManifest['CACHE:'])) {
-            $this->arrayManifest['CACHE:'][] = $addrPage;
-            $stringManifest = $this->manifestToString();
-            $this->writeInFile($fileManifest, $stringManifest, 'w');
-        }
-            //TODO what is this
-            //Writing in
-            //Getting the html manifest string
-        $userManifest = $this->getUserCatalogUrl($userDir).'/.manifest.appcache';
 
             //Getting the user card.json file url
         $userJsonUrl = $this->getUserCatalogUrl($userDir).'/card.json';
 
+            //Writing current page to file manifest
+        $this->readManifestFile($manifestData);
+        $addrPage = $this->addressPage($title);
+
+        preg_match('%\<script\s*src\=https?\:\/\/\w*\.\w*\/\w*\.js\><\/script\>%', $htmlData, $mn);
+        $scriptFile = $mn[0];
+        $fileJs = trim(str_replace(['<', 'script', 'src', '=', '>', '/>' ],'', $scriptFile), '/');
+
+            //Adding a pages in the manifest file user
+        if (!array_search($addrPage, $this->arrayManifest['CACHE:'])) {
+            $this->arrayManifest['CACHE:'][] = $addrPage;
+            if (!array_search($userJsonUrl, $this->arrayManifest['CACHE:'])) {
+                $this->arrayManifest['CACHE:'][] = $userJsonUrl;
+            }
+            if (!array_search($fileJs, $this->arrayManifest['CACHE:'])) {
+                $this->arrayManifest['CACHE:'][] = $fileJs;
+            }
+            $urlOffline = $this->getUserCatalogUrl($userDir).'/offline.html';
+            if (!array_search($urlOffline, $this->arrayManifest['CACHE:'])) {
+                $this->arrayManifest['CACHE:'][] = $urlOffline;
+            }
+
+            $stringManifest = $this->manifestToString();
+            $this->writeInFile($fileManifest, $stringManifest, 'w');
+        }
+
+            //Getting the html manifest string
+        $userManifest = $this->getUserCatalogUrl($userDir).'/.manifest.appcache';
+
+
            //Add the user manifest tag
-        //$htmlData = str_replace('<html>', "<html manifest=\"$userManifest\">", $htmlData);
+        $htmlDataU = str_replace('<html>', "<html manifest=\"$userManifest\">", $htmlData);
+
+        //Add the user manifest tag in offline page
+        $offlineData = str_replace('<html>', "<html manifest=\"$userManifest\">", $offlineData);
 
             //Add the file json tag
         $script = "<script type=\"text/x-json\" src=$userJsonUrl></script>";
         preg_match('%\<script\s*src\=https?\:\/\/\w*\.\w*\/\w*\.js\><\/script\>%', $htmlData, $m);
-        $htmlData = str_replace($m[0], "\n$script\n$m[0]", $htmlData);
+        $htmlDataUser = str_replace($m[0], "\n$script\n$m[0]", $htmlDataU);
+
+        //Add the file json tag in offline page
+        preg_match('%\<script\>json\<\/script\>%', $offlineData, $m);
+        $offlineData = str_replace($m[0], "\n$script\n", $offlineData);
+
+        //Add the file js tag in offline page
+        preg_match('%\<script\>js\<\/script\>%', $offlineData, $m);
+        $offlineData = str_replace($m[0], "\n$scriptFile\n", $offlineData);
+
+        echo $htmlDataUser;
 
             //Create the user cache file
         $this->copyWriteFile($htmlFileName, $htmlData);
 
+            //Create the user offline file
+        $this->copyWriteFile($userOfflineHtml, $offlineData);
 
-
-
-
-        require $htmlFileName;
+        //require $htmlFileName;
 
     }
-    public function getUserCatalogUrl($userDir)
+
+    public function searchHostInUrls($data, $host, $title, $i = 0)
+    {
+        $page = 'page-'.$i;
+        if ($i < $data->pages->count) {
+            $prop = get_object_vars($data->pages->$page);
+            if ($prop){
+                $key = (array_keys($prop))[0];
+                if ($prop[$key] == $title){
+                    if (property_exists($data->pages->$page, $host)){
+                        return $this->searchHostInUrls($data, $host, $title, $i + 1);
+                    }
+                    else {
+                        return $i;
+                    }
+                }
+                else {
+                    return $this->searchHostInUrls($data, $host, $title, $i + 1);
+                }
+            }
+            else {
+                $this->searchHostInUrls($data, $host, $title, $i + 1);
+            }
+
+        }
+        else {
+            return false;
+        }
+    }
+
+    /**
+     * @param string $userDir
+     * @return string
+     */
+    public function getUserCatalogUrl(string $userDir): string
     {
         return $this->protocol.'://'.$this->serverName.'/'.$this->cacheDir().'/'.Config::$usersDir.'/'.$userDir;
     }
 
 
+    /**
+     * @return string
+     */
     public function manifestToString()
     {
         $stringManifest['CACHE:'][] = implode("\n", $this->arrayManifest['CACHE:']);
@@ -164,18 +261,33 @@ class Render extends Templater
             "\nNETWORK:\n".$stringManifest['NETWORK:'][0]."\nFALLBACK:\n".$stringManifest['FALLBACK:'][0];
     }
 
-    public function  addressPage($title)
+    /**
+     * @param string $title
+     * @return string
+     */
+    public function  addressPage(string $title): string
     {
         $cacheDir = $this->cacheDir();
         return '/'.$cacheDir.'/pages/'.$title.".html";
     }
-    public function cacheDir()
+
+    /**
+     * @return string
+     */
+    public function cacheDir(): string
     {
         preg_match('%\w*\/%', Config::$userCache, $m);
         return str_replace($m[0], '', Config::$userCache);
     }
 
-    public function readManifestFile($data, $array = array(), $i = 3, $y = 0)
+    /**
+     * @param array $data
+     * @param array $array
+     * @param int $i
+     * @param int $y
+     * @return array|bool
+     */
+    public function readManifestFile(array $data, array $array = array(), int $i = 3, int $y = 0)
     {
         $count = count($data);
         $data[$i] = trim($data[$i]);
@@ -201,30 +313,40 @@ class Render extends Templater
             $this->arrayManifest = $array;
             return $array;
         }
+        return false;
     }
 
 
 
     /**
-     * @param $jsonName
+     * @param $fileName
      * @param $jsonPath
+     * @return  bool
      */
-    public function checkAndCreateFile($jsonPath, $jsonName)
+    public function checkAndCreateFile(string $jsonPath, string $fileName): bool
     {
-        if (!file_exists($jsonName)) {
-            copy($jsonPath, $jsonName);
+        if (!file_exists($fileName)) {
+            copy($jsonPath, $fileName);
+            return true;
+        }
+        else {
+            return false;
         }
     }
 
     /**
-     * @param $cookie_name
+     * @param $cookieName
      * @return bool|string
      */
-    public function getCookie($cookie_name)
+    public function getCookie($cookieName)
     {
-        return base64_decode($_COOKIE[$cookie_name]);
+        return base64_decode($_COOKIE[$cookieName]);
     }
 
+    /**
+     * Ajax request method
+     * @return bool
+     */
     public function ajax()
     {
         if ($this->ajaxData['load']){
@@ -234,13 +356,22 @@ class Render extends Templater
         return $ajax->jsonHandler();
     }
 
-    public function writeInJson($userFileCard, $userFileData)
+    /**
+     * @param string $userFileCard
+     * @param \stdClass $userFileData
+     */
+    public function writeInJson(string $userFileCard, \stdClass $userFileData)
     {
         $res = fopen($userFileCard, 'w');
         fwrite($res, json_encode($userFileData));
         fclose($res);
     }
 
+    /**
+     * @param mixed $data
+     * @param mixed $userFileData
+     * @return mixed
+     */
     public function formDate($data, $userFileData)
     {
         $firstVisit = $userFileData->info->firstVisit;
@@ -253,12 +384,23 @@ class Render extends Templater
         return $userFileData;
     }
 
-    public function getPageN($data)
+    /**
+     * @param mixed $data
+     * @return string
+     */
+    public function getPageN($data):string
     {
         return 'page-'.$data->pages->count;
     }
 
-    public function searchHost($data, $host, $i = 0, $y = 0)
+    /**
+     * @param mixed $data
+     * @param string $host
+     * @param int $i
+     * @param int $y
+     * @return bool
+     */
+    public function searchHost(\stdClass $data, string $host, int $i = 0, int $y = 0): bool
     {
         $page = 'page-'.$i;
         if ($i < $data->pages->count){
@@ -283,17 +425,17 @@ class Render extends Templater
 
 
     /**
-     * @param $cache_catalog string
-     * @param $file_cache string
+     * @param $cacheCatalog string
+     * @param $fileCache string
      * @return string
      */
-    public function getFileName(string $cache_catalog, string $file_cache): string
+    public function getFileName(string $cacheCatalog, string $fileCache): string
     {
-        return $cache_catalog.'/'.md5($file_cache).'.php';
+        return $cacheCatalog.'/'.md5($fileCache).'.php';
     }
-    public function getHtmlFileName(string $user_cache_catalog, string $file_cache): string
+    public function getHtmlFileName(string $userCacheCatalog, string $fileCache): string
     {
-        return $user_cache_catalog.'/'.md5($file_cache).'.html';
+        return $userCacheCatalog.'/'.md5($fileCache).'.html';
     }
     public function copyWriteFile($fileName, $data, $mode = 'w')
     {
@@ -311,8 +453,13 @@ class Render extends Templater
         fclose($res);
     }
 
-    public function getHtmlTitleFile($user_cache_catalog, $title)
+    /**
+     * @param string $userCacheCatalog
+     * @param string $title
+     * @return string
+     */
+    public function getHtmlTitleFile(string $userCacheCatalog, string $title): string
     {
-        return $user_cache_catalog.'/'.$title.'.html';
+        return $userCacheCatalog.'/'.$title.'.html';
     }
 }
