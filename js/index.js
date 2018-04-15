@@ -40,13 +40,21 @@ function write(data, i = 0) {
                 body.appendChild(div);
                 write(data, i + 1);
             }
+
+        }
+        if (i === obj.pages.count - 1) {
+            let div = document.createElement('div');
+            div.className = 'sic2';
+            div.innerHTML = "<a href=" + window.localStorage.nameLineLast + '>' + window.localStorage.nameLineLastTitle + '</a>';
+            body.appendChild(div);
         }
     }
 }
 
 function parseJson(data, i = 0){
 
-
+    window.localStorage.nameLineLastTitle = document.querySelector('title').innerHTML;
+    window.localStorage.nameLineLast = window.location;
     window.localStorage.nameLine = data;
 
 }

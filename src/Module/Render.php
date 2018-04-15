@@ -136,7 +136,8 @@ class Render extends Templater
         }
 
             //Getting the user card.json file url
-        $userJsonUrl = $this->getUserCatalogUrl($userDir).'/card.json';
+        $userCardJson = (Yaml::parseFile($this->fileDirs))['cardJson'];
+        $userJsonUrl = $this->getUserCatalogUrl($userDir)."/$userCardJson";
 
             //Writing current page to file manifest
         $this->readManifestFile($manifestData);
