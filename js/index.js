@@ -46,6 +46,7 @@ function write(data, i = 0) {
 
 function parseJson(data, i = 0){
 
+
     window.localStorage.nameLine = data;
 
 }

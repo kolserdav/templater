@@ -60,12 +60,8 @@ class Render extends Templater
                 //Creating a cache file
             $this->copyWriteFile($fileName, $dataTwo);
         }
-        $cookieName = Config::$cookieName;
-        if (!$cookieName){
-            $cookieName = Config::setCookie();
-        }
-        $cookie = $this->getCookie($cookieName);
-        if (!$this->userCacheCatalog || empty($cookie)){
+
+        if (!$this->userCacheCatalog){
                 //Require ready content file
             require $fileName;
         }
@@ -151,6 +147,7 @@ class Render extends Templater
         $fileJs = trim(str_replace(['<', 'script', 'src', '=', '>', '/>' ],'', $scriptFile), '/');
 
             //Adding a pages in the manifest file user
+        $scriptTemplater = $this->getScriptUrlTemplaterJs();
         if (!array_search($addrPage, $this->arrayManifest['CACHE:'])) {
             $this->arrayManifest['CACHE:'][] = $addrPage;
             if (!array_search($userJsonUrl, $this->arrayManifest['CACHE:'])) {
@@ -158,6 +155,9 @@ class Render extends Templater
             }
             if (!array_search($fileJs, $this->arrayManifest['CACHE:'])) {
                 $this->arrayManifest['CACHE:'][] = $fileJs;
+            }
+            if (!array_search($scriptTemplater, $this->arrayManifest['CACHE:'])) {
+                $this->arrayManifest['CACHE:'][] = $scriptTemplater;
             }
 
             $stringManifest = $this->manifestToString();
@@ -168,18 +168,38 @@ class Render extends Templater
         $templaterJs = $this->userCacheCatalog.'/js/templater.js';
         $this->checkAndCreateFile($this->getRoot().'/storage/templater.js', $templaterJs);
 
+            //Setting cookie name
+        $nameCookie = Config::$cookieName;
+        $jsData = file_get_contents($templaterJs);
+        preg_match('%nameCookie\s*\=\s*\'\w*\'%', $jsData, $n);
+        $oldCookieName = preg_replace('%nameCookie\s*\=\s*%', '',$n[0]);
+        $newJs = str_replace($oldCookieName, '\''.$nameCookie.'\'', $jsData);
+        $this->writeInFile($templaterJs, $newJs, 'w');
+
+
+
+        //Add templater.js in the html
+        $script = "<script src=$scriptTemplater></script>";
+        preg_match('%\<\/body\>%', $htmlData, $m);
+        $htmlData = str_replace($m[0], "$script\n$m[0]", $htmlData);
 
         //Getting the html manifest string
         $userManifest = $this->getUserCatalogUrl($userDir).'/.manifest.appcache';
 
+        if (!empty($this->getCookie($nameCookie))) {
+            //Add the user manifest tag
+            $htmlDataU = str_replace('<html>', "<html manifest=\"$userManifest\">", $htmlData);
 
-           //Add the user manifest tag
-        $htmlDataU = str_replace('<html>', "<html manifest=\"$userManifest\">", $htmlData);
 
             //Add the file json tag
-        $script = "<script type=\"text/x-json\" src=$userJsonUrl></script>";
-        preg_match('%\<script\s*src\=https?\:\/\/\w*\.\w*\/\w*\.js\><\/script\>%', $htmlData, $m);
-        $htmlDataUser = str_replace($m[0], "\n$script\n$m[0]", $htmlDataU);
+            $script = "<script id = \"jsonFile\" type=\"text/x-json\" src=$userJsonUrl></script>";
+            preg_match('%\<script\s*src\=https?\:\/\/\w*.*.js\><\/script\>%', $htmlData, $m);
+            $htmlDataUser = str_replace($m[0], "\n$script\n$m[0]", $htmlDataU);
+
+        }
+        else {
+            $htmlDataUser = $htmlData;
+        }
 
 
         echo $htmlDataUser;
@@ -187,6 +207,11 @@ class Render extends Templater
             //Create the user cache file
         $this->copyWriteFile($htmlFileName, $htmlData);
 
+    }
+
+    public function getScriptUrlTemplaterJs()
+    {
+        return strtolower($this->protocol).'://'.$this->serverName.'/'.$this->cacheDir().'/pages/js/templater.js';
     }
 
     /**

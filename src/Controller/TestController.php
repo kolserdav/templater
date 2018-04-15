@@ -20,7 +20,8 @@ class TestController
         $c = new Config();
         $c->setConfig([
             'cache' => 'var/cache',
-            'userCache' => 'public/cache'
+            'userCache' => 'public/cache',
+            'cookieName' => 'tew'
         ]);
         $r = new Render('template', '/template.twig');
         $sss = "<hr>ffffff<hr>";
