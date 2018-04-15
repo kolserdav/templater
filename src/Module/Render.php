@@ -92,12 +92,6 @@ class Render extends Templater
         $jsonName = $userCacheDir.'/'.$this->cardJson;
         $this->checkAndCreateFile($this->jsonPath, $jsonName);
 
-            //Create the user offline page
-        $userOfflineHtml = $userCacheDir.'/offline.html';
-        if (!file_exists($userOfflineHtml)) {
-            @copy($this->offlinePage, $userOfflineHtml);
-        }
-        $offlineData = file_get_contents($userOfflineHtml);
 
             //Create user manifest file
         $fileManifest = $userCacheDir.'/'.'.manifest.appcache';
@@ -165,51 +159,44 @@ class Render extends Templater
             if (!array_search($fileJs, $this->arrayManifest['CACHE:'])) {
                 $this->arrayManifest['CACHE:'][] = $fileJs;
             }
-            $urlOffline = $this->getUserCatalogUrl($userDir).'/offline.html';
-            if (!array_search($urlOffline, $this->arrayManifest['CACHE:'])) {
-                $this->arrayManifest['CACHE:'][] = $urlOffline;
-            }
 
             $stringManifest = $this->manifestToString();
             $this->writeInFile($fileManifest, $stringManifest, 'w');
         }
+        //Create templater.js
+        $this->checkAndCreateDir($this->userCacheCatalog.'/js');
+        $templaterJs = $this->userCacheCatalog.'/js/templater.js';
+        $this->checkAndCreateFile($this->getRoot().'/storage/templater.js', $templaterJs);
 
-            //Getting the html manifest string
+
+        //Getting the html manifest string
         $userManifest = $this->getUserCatalogUrl($userDir).'/.manifest.appcache';
 
 
            //Add the user manifest tag
         $htmlDataU = str_replace('<html>', "<html manifest=\"$userManifest\">", $htmlData);
 
-        //Add the user manifest tag in offline page
-        $offlineData = str_replace('<html>', "<html manifest=\"$userManifest\">", $offlineData);
-
             //Add the file json tag
         $script = "<script type=\"text/x-json\" src=$userJsonUrl></script>";
         preg_match('%\<script\s*src\=https?\:\/\/\w*\.\w*\/\w*\.js\><\/script\>%', $htmlData, $m);
         $htmlDataUser = str_replace($m[0], "\n$script\n$m[0]", $htmlDataU);
 
-        //Add the file json tag in offline page
-        preg_match('%\<script\>json\<\/script\>%', $offlineData, $m);
-        $offlineData = str_replace($m[0], "\n$script\n", $offlineData);
-
-        //Add the file js tag in offline page
-        preg_match('%\<script\>js\<\/script\>%', $offlineData, $m);
-        $offlineData = str_replace($m[0], "\n$scriptFile\n", $offlineData);
 
         echo $htmlDataUser;
 
             //Create the user cache file
         $this->copyWriteFile($htmlFileName, $htmlData);
 
-            //Create the user offline file
-        $this->copyWriteFile($userOfflineHtml, $offlineData);
-
-        //require $htmlFileName;
-
     }
 
-    public function searchHostInUrls($data, $host, $title, $i = 0)
+    /**
+     * @param $data
+     * @param $host
+     * @param $title
+     * @param int $i
+     * @return bool|int
+     */
+    public function searchHostInUrls(\stdClass $data, string $host, string $title, int $i = 0)
     {
         $page = 'page-'.$i;
         if ($i < $data->pages->count) {
@@ -244,7 +231,7 @@ class Render extends Templater
      */
     public function getUserCatalogUrl(string $userDir): string
     {
-        return $this->protocol.'://'.$this->serverName.'/'.$this->cacheDir().'/'.Config::$usersDir.'/'.$userDir;
+        return strtolower($this->protocol).'://'.$this->serverName.'/'.$this->cacheDir().'/'.Config::$usersDir.'/'.$userDir;
     }
 
 

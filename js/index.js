@@ -18,21 +18,18 @@ if(navigator.onLine) {
     ajax('http://templater.col/respond-require-data', response);
     ajax(jsonFile, '', parseJson);
 }
-
-
-if(!navigator.onLine){
-    let loc = 'http://templater.col/cache/users/' + window.localStorage.nameLineCi + '/offline.html';
-    if (window.location !== loc) {
-        window.location = loc;
-    }
+else {
+    let data = window.localStorage.nameLine;
+    let div = document.createElement('div');
+    div.className = 'title';
+    div.innerHTML = "<h3>Offline pages</h3>";
+    body.appendChild(div);
+    write(data);
 }
 
 
-
-function parseJson(data, i = 0){
-
+function write(data, i = 0) {
     let obj = JSON.parse(data);
-    window.localStorage.nameLineCi = obj.info.name;
     if (i < obj.pages.count) {
         let page = obj.pages['page-' + i];
         for (key in page) {
@@ -41,10 +38,15 @@ function parseJson(data, i = 0){
                 div.className = 'sic';
                 div.innerHTML = "<a href="+key+'>'+page[key]+'</a>';
                 body.appendChild(div);
-                parseJson(data, i + 1);
+                write(data, i + 1);
             }
         }
     }
+}
+
+function parseJson(data, i = 0){
+
+    window.localStorage.nameLine = data;
 
 }
 

@@ -135,10 +135,7 @@ abstract class Templater
                     $this->writeInFile($fileDirs, "\njsonDef : $this->jsonPath");
                 }
 
-                //Writing the typing offline.html file in dirs.yaml
-                if (!$pars['offline']) {
-                    $this->writeInFile($fileDirs, "\noffline : $this->offlinePage");
-                }
+
 
                 //Writing the aliases file data-urls.json in dirs.yaml
                 if (!$pars['dataUrls']) {
