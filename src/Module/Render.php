@@ -106,6 +106,7 @@ class Render extends Templater
             //Getting cache file name
         $title = Helper::searchTitle($htmlData);
         if (!$title) {
+
             $htmlFileName = $this->getHtmlFileName($this->userCacheCatalog, $htmlData);
         }
         else {
@@ -119,7 +120,9 @@ class Render extends Templater
                 if($dataUrls->pages->count > 0){
 
                     $host = strtolower($this->protocol).'://'.$this->serverName.$_SERVER['REQUEST_URI'];
+
                     $res = $this->searchHostInUrls($dataUrls, $host, $title);
+
 
                         //Adding a prefix for title and the cache file name.
                     if ($res !== false) {

@@ -19,7 +19,6 @@ class AjaxHelper extends Render
      */
     public function jsonHandler(): bool
     {
-
             //Get data from ajax request
         $data = json_decode($this->ajaxData['cookie']);
 
@@ -52,7 +51,6 @@ class AjaxHelper extends Render
 
     public function formJsonFile($data, $userFileCard, $nameDir = 'All_Users')
     {
-
         $userFileData = json_decode(file_get_contents($userFileCard));
         if ($userFileData->info->name === 'Firstname_Lastname') {
             $userFileData->info->codename = $data->name->nameCookie->encode;
