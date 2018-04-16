@@ -139,32 +139,46 @@ class Render extends Templater
         $userCardJson = (Yaml::parseFile($this->fileDirs))['cardJson'];
         $userJsonUrl = $this->getUserCatalogUrl($userDir)."/$userCardJson";
 
+            //Adding a pages in the manifest file user
+        $scriptTemplater = $this->getScriptUrlTemplaterJs();
+
             //Writing current page to file manifest
         $this->readManifestFile($manifestData);
         $addrPage = $this->addressPage($title);
-
-        preg_match('%\<script\s*src\=https?\:\/\/\w*\.\w*\/\w*\.js\><\/script\>%', $htmlData, $mn);
-        $scriptFile = $mn[0];
-        $fileJs = trim(str_replace(['<', 'script', 'src', '=', '>', '/>' ],'', $scriptFile), '/');
-
-            //Adding a pages in the manifest file user
-        $scriptTemplater = $this->getScriptUrlTemplaterJs();
         if (!array_search($addrPage, $this->arrayManifest['CACHE:'])) {
             $this->arrayManifest['CACHE:'][] = $addrPage;
+            $jsonData = json_decode(file_get_contents("$userCacheDir/$this->cardJson"));
+
+                //Writing first page in the manifest file
+            if ($jsonData->pages->count == 2) {
+                $page = 'page-0';
+                $key = array_keys(get_object_vars($jsonData->pages->$page))[0];
+                $firstPage = '/'.$this->cacheDir().'/pages/'.$jsonData->pages->$page->$key.'.html';
+                if (!array_search($firstPage, $this->arrayManifest['CACHE:'])) {
+                    $this->arrayManifest['CACHE:'][] = $firstPage;
+                }
+                if (!array_search($key, $this->arrayManifest['CACHE:'])) {
+                    $this->arrayManifest['CACHE:'][] = $key;
+                }
+            }
+
+                //Writing the user json file in the manifest file
             if (!array_search($userJsonUrl, $this->arrayManifest['CACHE:'])) {
                 $this->arrayManifest['CACHE:'][] = $userJsonUrl;
             }
-            if (!array_search($fileJs, $this->arrayManifest['CACHE:'])) {
-                $this->arrayManifest['CACHE:'][] = $fileJs;
-            }
+
+
+                //Writing the templater.js file in the manifest file
             if (!array_search($scriptTemplater, $this->arrayManifest['CACHE:'])) {
                 $this->arrayManifest['CACHE:'][] = $scriptTemplater;
             }
 
+                //Writing all changes
             $stringManifest = $this->manifestToString();
             $this->writeInFile($fileManifest, $stringManifest, 'w');
         }
-        //Create templater.js
+
+            //Create templater.js
         $this->checkAndCreateDir($this->userCacheCatalog.'/js');
         $templaterJs = $this->userCacheCatalog.'/js/templater.js';
         $this->checkAndCreateFile($this->getRoot().'/storage/templater.js', $templaterJs);
@@ -172,27 +186,24 @@ class Render extends Templater
             //Setting cookie name
         $nameCookie = Config::$cookieName;
         $jsData = file_get_contents($templaterJs);
-        preg_match('%nameCookie\s*\=\s*\'\w*\'%', $jsData, $n);
-        $oldCookieName = preg_replace('%nameCookie\s*\=\s*%', '',$n[0]);
-        $newJs = str_replace($oldCookieName, '\''.$nameCookie.'\'', $jsData);
+        $newJs = preg_replace('%let\s*e\=a\(\"\w*\"\)%', "let e=a(\"$nameCookie\")",$jsData);
         $this->writeInFile($templaterJs, $newJs, 'w');
 
 
-
-        //Add templater.js in the html
+             //Add templater.js in the html
         $script = "<script src=$scriptTemplater></script>";
         preg_match('%\<\/body\>%', $htmlData, $m);
         $htmlData = str_replace($m[0], "$script\n$m[0]", $htmlData);
 
-        //Getting the html manifest string
+            //Getting the html manifest string
         $userManifest = $this->getUserCatalogUrl($userDir).'/.manifest.appcache';
 
         if (!empty($this->getCookie($nameCookie))) {
-            //Add the user manifest tag
+
+                 //Add the user manifest tag
             $htmlDataU = str_replace('<html>', "<html manifest=\"$userManifest\">", $htmlData);
 
-
-            //Add the file json tag
+                //Add the file json tag
             $script = "<script id = \"jsonFile\" type=\"text/x-json\" src=$userJsonUrl></script>";
             preg_match('%\<script\s*src\=https?\:\/\/\w*.*.js\><\/script\>%', $htmlData, $m);
             $htmlDataUser = str_replace($m[0], "\n$script\n$m[0]", $htmlDataU);
@@ -362,9 +373,6 @@ class Render extends Templater
      */
     public function ajax()
     {
-        if ($this->ajaxData['load']){
-            var_dump(1);
-        }
         $ajax = new AjaxHelper($this->ajaxData, null);
         return $ajax->jsonHandler();
     }
@@ -446,10 +454,22 @@ class Render extends Templater
     {
         return $cacheCatalog.'/'.md5($fileCache).'.php';
     }
+
+    /**
+     * @param string $userCacheCatalog
+     * @param string $fileCache
+     * @return string
+     */
     public function getHtmlFileName(string $userCacheCatalog, string $fileCache): string
     {
         return $userCacheCatalog.'/'.md5($fileCache).'.html';
     }
+
+    /**
+     * @param $fileName
+     * @param $data
+     * @param string $mode
+     */
     public function copyWriteFile($fileName, $data, $mode = 'w')
     {
         try{
