@@ -7,8 +7,16 @@ _Installation_
 _Dependencies_ 
  
 `"php" : "^7.0"`  
+`"kolserdav/router": "^0.2.0"`  
 --dev `"phpunit" : "^7.0"`  
  
+ _package.json_
+` "dependencies": {
+     "ajaxsim": "^1.0.0",
+     "dist-cookie": "^0.0.7"
+   },
+   "devDependencies": {
+     "webpack": "^4.5.0"`
 
 _Using in template_
 
@@ -65,8 +73,8 @@ $obj->render(
         'for_array2' => [4,3,2,1]
     ],
     [
-        '@example_field1' => 'patch.file', //patches repository /template-catalog/views
-        '@example_field2' => 'path/patch.file' //patches repository /template-catalog/views/path
+        'example_field1' => 'patch.file', //patches repository /template-catalog/views
+        'example_field2' => 'path/patch.file' //patches repository /template-catalog/views/path
         ]);
 ```
 

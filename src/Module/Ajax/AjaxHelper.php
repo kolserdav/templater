@@ -11,6 +11,7 @@ namespace Avir\Templater\Module\Ajax;
 use Avir\Templater\Module\Render;
 use Symfony\Component\Yaml\Yaml;
 use Avir\Templater\Module\Config;
+use Avir\Templater\Module\CacheHandler;
 
 class AjaxHelper extends Render
 {
@@ -49,6 +50,12 @@ class AjaxHelper extends Render
         return $this->formJsonFile($data, $userFileCard, $nameDir);
     }
 
+    /**
+     * @param $data
+     * @param $userFileCard
+     * @param string $nameDir
+     * @return bool
+     */
     public function formJsonFile($data, $userFileCard, $nameDir = 'All_Users')
     {
         $userFileData = json_decode(file_get_contents($userFileCard));
@@ -60,20 +67,23 @@ class AjaxHelper extends Render
             $userFileData->info->codename = base64_encode($nameDir);
             $userFileData->info->name = $nameDir;
         }
-        $userFileData = $this->formDate($data, $userFileData);
-        $currentPage = $this->getPageN($userFileData);
+
+        $cac = new CacheHandler();
+
+        $userFileData = $cac->formDate($data, $userFileData);
+        $currentPage = $cac->getPageN($userFileData);
         $pag = new \stdClass();
         $host = $this->ajaxData['host'];
-        if(!$this->searchHost($userFileData, $host)) {
+        if(!$cac->searchHost($userFileData, $host)) {
             $pag->$host = $this->ajaxData['title'];
             $userFileData->pages->$currentPage = $pag;
             $userFileData->pages->count++;
-            $this->writeInJson($userFileCard, $userFileData);
+            $cac->writeInJson($userFileCard, $userFileData);
 
             return false;
         }
 
-        $this->writeInJson($userFileCard, $userFileData);
+        $cac->writeInJson($userFileCard, $userFileData);
 
         return true;
     }
