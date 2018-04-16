@@ -1,4 +1,5 @@
-vendor 
+vendor
+node_modules/
 .idea/ 
 composer.lock
 src/Controller/

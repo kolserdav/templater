@@ -39,6 +39,7 @@ class AjaxHelper extends Render
 
             //Form user card.json file
         $userFileCard = $userDir.'/'.Config::$cardJson;
+        $this->checkAndCreateDir($userDir);
         $this->checkAndCreateFile($jsonPath, $userFileCard);
         $aliasesFile = (Yaml::parseFile($yaml))['dataUrls'];
 

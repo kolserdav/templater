@@ -39,10 +39,14 @@ class Config
         static::$usersDir = self::setUsersDir($args);
         static::$fileDirs = $args['fileDirs'];
         static::$cardJson = $args['cardJson'];
+        static::$cookieName = self::setCookie($args['cookieName']);
 
     }
-    public static function setCookie(string $name = 'name')
+    public static function setCookie($name = 'name')
     {
+        if (empty($name)){
+            $name = 'name';
+        }
         static::$cookieName = $name;
         return $name;
 

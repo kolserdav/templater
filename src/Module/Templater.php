@@ -73,6 +73,7 @@ abstract class Templater
     public $cardJson;
     public $manifestPath;
     public $offlinePage;
+    public $fileDirs;
     public  static $refactor;
 
 
@@ -86,10 +87,9 @@ abstract class Templater
         $root = $this->getRoot();
 
          //File with paths
-        $fileDirs = $root. '/storage/dirs.yaml';
-        $this->offlinePage = $root. '/storage/offline.html';
+        $this->fileDirs = $root. '/storage/dirs.yaml';
         $this->manifestPath = $root. '/storage/.manifest.appcache';
-        $pars = Yaml::parseFile($fileDirs);
+        $pars = Yaml::parseFile($this->fileDirs);
 
             //Construct
         if ($temp_file !== null){
@@ -109,13 +109,13 @@ abstract class Templater
                     $this->cardJson = Config::setCardJson();
                 }
 
-                //Writing in yaml  user card.json file name
+                    //Writing in yaml  user card.json file name
                 $fieldCardJson = 'cardJson';
                 if ($this->cardJson && !$pars[$fieldCardJson]) {
-                    $this->writeInFile($fileDirs, "\n$fieldCardJson : $this->cardJson");
+                    $this->writeInFile($this->fileDirs, "\n$fieldCardJson : $this->cardJson");
                 } //Custom change user card.json file name
                 else if ($pars[$fieldCardJson] !== $this->cardJson) {
-                    $this->changeYamlData($pars, $this->cardJson, $fileDirs, $fieldCardJson);
+                    $this->changeYamlData($pars, $this->cardJson, $this->fileDirs, $fieldCardJson);
                 }
 
                     //User cache catalog
@@ -124,48 +124,47 @@ abstract class Templater
                      //$root/$configUserCache/$prefixUsersDir
                 $this->usersDir =  $userCache. '/' . $usersDir;
 
-                //Typing card.json file
+                    //Typing card.json file
                 $this->jsonPath = "$root/storage/$this->cardJson";
 
-                //Users cache catalog set in Config::setConfig
+                    //Users cache catalog set in Config::setConfig
                 $configUserCache = Config::$userCache;
 
-                //Writing typing card.json file in dirs.yaml
+                    //Writing typing card.json file in dirs.yaml
                 if (!$pars['jsonDef']) {
-                    $this->writeInFile($fileDirs, "\njsonDef : $this->jsonPath");
+                    $this->writeInFile($this->fileDirs, "\njsonDef : $this->jsonPath");
                 }
 
-                //Writing the typing offline.html file in dirs.yaml
-                if (!$pars['offline']) {
-                    $this->writeInFile($fileDirs, "\noffline : $this->offlinePage");
-                }
 
-                //Writing the aliases file data-urls.json in dirs.yaml
+
+                    //Writing the aliases file data-urls.json in dirs.yaml
                 if (!$pars['dataUrls']) {
                     $aliasesFile = $root.'/'.Config::$userCache.'/pages/aliases/data-urls.json';
-                    $this->writeInFile($fileDirs, "\ndataUrls : $aliasesFile");
+                    $this->writeInFile($this->fileDirs, "\ndataUrls : $aliasesFile");
                 }
 
-                //Writing cache dir in yaml
+                    //Writing cache dir in yaml
                 if ($configUserCache && !$pars['userCache']) {
-                    $this->writeInFile($fileDirs, "\nuserCache : $configUserCache");
+                    $this->writeInFile($this->fileDirs, "\nuserCache : $configUserCache");
                 }
 
-                //Writing in yaml custom cache catalog
+                     //Writing in yaml custom cache catalog
                 if ($configCache && !$pars['cache']) {
-                    $this->writeInFile($fileDirs, "\ncache : $configCache");
+                    $this->writeInFile($this->fileDirs, "\ncache : $configCache");
                 }
                     //Custom change user cache catalog
                 else if ($pars['cache'] !== $configCache) {
-                    $this->changeYamlData($pars, $configCache, $fileDirs, 'cache');
+                    $this->changeYamlData($pars, $configCache, $this->fileDirs, 'cache');
                 }
 
-                //Writing cache usersDir in yaml
+                    //Writing cache usersDir in yaml
                 if (!$pars['userDir']) {
-                    $this->writeInFile($fileDirs, "\nuserDir : $this->usersDir");
-                } //Custom change users cache catalog
+                    $this->writeInFile($this->fileDirs, "\nuserDir : $this->usersDir");
+                }
+
+                    //Custom change users cache catalog
                 else if ($pars['userCache'] !== $configUserCache) {
-                    $this->changeYamlData($pars, $configUserCache, $fileDirs, 'userCache');
+                    $this->changeYamlData($pars, $configUserCache, $this->fileDirs, 'userCache');
                 }
 
                     //Create user cache catalog
@@ -191,11 +190,11 @@ abstract class Templater
 
             //Constructor for ajax request
         else {
-            $data = Yaml::parseFile($fileDirs);
+            $data = Yaml::parseFile($this->fileDirs);
             $this->ajaxData = $temp_dir;
             $c = new Config();
             $c->setConfig([
-                'fileDirs' => $fileDirs,
+                'fileDirs' => $this->fileDirs,
                 'cardJson' => $data['cardJson']
             ]);
         }
@@ -265,8 +264,8 @@ abstract class Templater
      */
     public function getRoot(): string
     {
-        preg_match("%.*src%",dirname(__DIR__),$m);
-        return preg_filter('%.{1}src%','',$m[0]);
+        preg_match("%.*vendor%",dirname(__DIR__),$m);
+        return preg_filter('%.{1}vendor%','',$m[0]);
     }
 
 
