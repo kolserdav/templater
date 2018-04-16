@@ -14,7 +14,7 @@
   },
     "require": {
       "php" : "^7.0",
-        "kolserdav/router": "^0.1.0"
+        "kolserdav/router": "^0.2.0"
     },
     "require-dev": {
         "phpunit/phpunit": "^7.0"
