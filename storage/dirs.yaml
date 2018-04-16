@@ -1,7 +1,7 @@
 
 cardJson : card.json
-jsonDef : C:\open\OSPanel\domains\other.domains\modules\templater/storage/card.json
-dataUrls : C:\open\OSPanel\domains\other.domains\modules\templater/public/cache/pages/aliases/data-urls.json
+jsonDef : C:\open\OSPanel\domains\frame.work\vendor\kolserdav\templater\src\Module/../../storage/card.json
+dataUrls : C:\open\OSPanel\domains\frame.work/public/cache/pages/aliases/data-urls.json
 userCache : public/cache
 cache : var/cache
-userDir : C:\open\OSPanel\domains\other.domains\modules\templater/public/cache/users
+userDir : C:\open\OSPanel\domains\frame.work/public/cache/users

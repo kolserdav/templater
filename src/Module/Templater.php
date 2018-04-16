@@ -88,7 +88,7 @@ abstract class Templater
 
          //File with paths
         $this->fileDirs =  __DIR__.'/../../storage/dirs.yaml';
-        $this->manifestPath = $root. '/storage/.manifest.appcache';
+        $this->manifestPath = __DIR__. '/../../storage/.manifest.appcache';
         $pars = Yaml::parseFile($this->fileDirs);
 
             //Construct
@@ -125,7 +125,7 @@ abstract class Templater
                 $this->usersDir =  $userCache. '/' . $usersDir;
 
                     //Typing card.json file
-                $this->jsonPath = "$root/storage/$this->cardJson";
+                $this->jsonPath = __DIR__."/../../storage/$this->cardJson";
 
                     //Users cache catalog set in Config::setConfig
                 $configUserCache = Config::$userCache;
@@ -138,8 +138,9 @@ abstract class Templater
 
 
                     //Writing the aliases file data-urls.json in dirs.yaml
+                $aliasesFile = $root.'/'.Config::$userCache.'/pages/aliases/data-urls.json';
+                $this->checkAndCreateFile($this->jsonPath, $aliasesFile);
                 if (!$pars['dataUrls']) {
-                    $aliasesFile = $root.'/'.Config::$userCache.'/pages/aliases/data-urls.json';
                     $this->writeInFile($this->fileDirs, "\ndataUrls : $aliasesFile");
                 }
 
@@ -197,6 +198,23 @@ abstract class Templater
                 'fileDirs' => $this->fileDirs,
                 'cardJson' => $data['cardJson']
             ]);
+        }
+    }
+
+
+    /**
+     * @param $fileName
+     * @param $jsonPath
+     * @return  bool
+     */
+    public function checkAndCreateFile(string $jsonPath, string $fileName): bool
+    {
+        if (!file_exists($fileName)) {
+            copy($jsonPath, $fileName);
+            return true;
+        }
+        else {
+            return false;
         }
     }
     public function changeYamlData($data, $dir, $dirsFile, $key, $i = 0)

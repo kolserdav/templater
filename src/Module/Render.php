@@ -181,7 +181,7 @@ class Render extends Templater
             //Create templater.js
         $this->checkAndCreateDir($this->userCacheCatalog.'/js');
         $templaterJs = $this->userCacheCatalog.'/js/templater.js';
-        $this->checkAndCreateFile($this->getRoot().'/storage/templater.js', $templaterJs);
+        $this->checkAndCreateFile(__DIR__.'/../../storage/templater.js', $templaterJs);
 
             //Setting cookie name
         $nameCookie = Config::$cookieName;
@@ -340,23 +340,6 @@ class Render extends Templater
         return false;
     }
 
-
-
-    /**
-     * @param $fileName
-     * @param $jsonPath
-     * @return  bool
-     */
-    public function checkAndCreateFile(string $jsonPath, string $fileName): bool
-    {
-        if (!file_exists($fileName)) {
-            copy($jsonPath, $fileName);
-            return true;
-        }
-        else {
-            return false;
-        }
-    }
 
     /**
      * @param $cookieName
