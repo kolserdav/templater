@@ -13,7 +13,8 @@ use Symfony\Component\Yaml\Yaml;
 
 class Render extends Templater
 {
-    private $arrayManifest;
+    public $arrayManifest;
+    public $uri;
     /**
      * This is the module collector
      * @param array $files
@@ -77,11 +78,13 @@ class Render extends Templater
     }
     public function userCache($fileName, $data)
     {
+        $cac = new CacheHandler();
 
-
-        $userDir = $this->getCookie(Config::$cookieName);
+        $nameCookie = Config::$cookieName;
+        $userDir = $this->getCookie($nameCookie);
 
         $userCacheDir = $this->usersDir.'/'.$userDir;
+
 
             //Create user dir and card.json file
         $this->checkAndCreateDir($userCacheDir);
@@ -105,76 +108,64 @@ class Render extends Templater
 
             //Getting cache file name
         $title = Helper::searchTitle($htmlData);
+        $this->uri = $_SERVER['REQUEST_URI'];
+
         if (!$title) {
 
-            $htmlFileName = $this->getHtmlFileName($this->userCacheCatalog, $htmlData);
+            $title = mb_convert_case(trim(str_replace('/', ' ', $this->uri)),MB_CASE_TITLE);
+            $titleTag = "<title>$title</title>";
+            $head = '</head>';
+            $htmlData = str_replace($head, "$titleTag\n$head", $htmlData);
+
         }
         else {
-            $cacheAliases = $this->userCacheCatalog.'/aliases/';
-            $aliasesFile = $cacheAliases.'data-urls.json';
-            if($this->checkAndCreateDir($cacheAliases)){
-                $this->checkAndCreateFile($this->jsonPath, $aliasesFile);
-            }
-            else {
-                $dataUrls = json_decode(file_get_contents($aliasesFile));
-                if($dataUrls->pages->count > 0){
 
-                    $host = strtolower($this->protocol).'://'.$this->serverName.$_SERVER['REQUEST_URI'];
+            $aliasesFile = $cac->checkAndCreateAliasesFile($this);
 
-                    $res = $this->searchHostInUrls($dataUrls, $host, $title);
+            $dataUrls = json_decode(file_get_contents($aliasesFile));
 
+            if($dataUrls->pages->count > 0){
 
-                        //Adding a prefix for title and the cache file name.
-                    if ($res !== false) {
-                        preg_match('%\D*%', $host, $m);
-                        $res = str_replace($m[0], '', $host);
-                        $titleNew = $title."-$res";
-                        $htmlData = str_replace($title, $titleNew, $htmlData);
-                        $title = $titleNew;
-                    }
+                $host = strtolower($this->protocol).'://'.$this->serverName.$this->uri;
+
+                $res = $this->searchHostInUrls($dataUrls, $host, $title);
+
+                    //Adding a prefix for title and the cache file name.
+                if ($res !== false) {
+                    $titleNew = $cac->addPrefixForTitle($host, $title);
+                    $htmlData = str_replace($title, $titleNew, $htmlData);
+                    $title = $titleNew;
                 }
-
             }
-            $htmlFileName = $this->getHtmlTitleFile($this->userCacheCatalog, $title);
         }
+        $htmlFileName = $this->getHtmlTitleFile($this->userCacheCatalog, $title);
+
+            /**
+             * Writing pages and files to file manifest
+             */
+        $this->readManifestFile($manifestData);
+        $addrPage = $this->addressPage($title);
 
             //Getting the user card.json file url
         $userCardJson = (Yaml::parseFile($this->fileDirs))['cardJson'];
         $userJsonUrl = $this->getUserCatalogUrl($userDir)."/$userCardJson";
 
-            //Adding a pages in the manifest file user
+            //String html templater.js script
         $scriptTemplater = $this->getScriptUrlTemplaterJs();
 
-            //Writing current page to file manifest
-        $this->readManifestFile($manifestData);
-        $addrPage = $this->addressPage($title);
         if (!array_search($addrPage, $this->arrayManifest['CACHE:'])) {
+
             $this->arrayManifest['CACHE:'][] = $addrPage;
             $jsonData = json_decode(file_get_contents("$userCacheDir/$this->cardJson"));
 
                 //Writing first page in the manifest file
-            if ($jsonData->pages->count == 2) {
-                $page = 'page-0';
-                $key = array_keys(get_object_vars($jsonData->pages->$page))[0];
-                $firstPage = '/'.$this->cacheDir().'/pages/'.$jsonData->pages->$page->$key.'.html';
-                if (!array_search($firstPage, $this->arrayManifest['CACHE:'])) {
-                    $this->arrayManifest['CACHE:'][] = $firstPage;
-                }
-                if (!array_search($key, $this->arrayManifest['CACHE:'])) {
-                    $this->arrayManifest['CACHE:'][] = $key;
-                }
-            }
+            $cac->writeFirstPageInToManifest($this, $jsonData);
 
                 //Writing the user json file in the manifest file
-            if (!array_search($userJsonUrl, $this->arrayManifest['CACHE:'])) {
-                $this->arrayManifest['CACHE:'][] = $userJsonUrl;
-            }
-
+            $cac->writeUserJsonFileToManifest($this, $userJsonUrl);
 
                 //Writing the templater.js file in the manifest file
-            if (!array_search($scriptTemplater, $this->arrayManifest['CACHE:'])) {
-                $this->arrayManifest['CACHE:'][] = $scriptTemplater;
-            }
+            $cac->writeTemplaterJsToManifest($this, $scriptTemplater);
 
                 //Writing all changes
             $stringManifest = $this->manifestToString();
@@ -182,24 +173,17 @@ class Render extends Templater
         }
 
             //Create templater.js
-        $this->checkAndCreateDir($this->userCacheCatalog.'/js');
-        $templaterJs = $this->userCacheCatalog.'/js/templater.js';
-        $this->checkAndCreateFile(__DIR__.'/../../storage/templater.js', $templaterJs);
+        $templaterJs = $cac->createTemplaterJs($this->userCacheCatalog, $this);
 
-            //Setting cookie name
-        $nameCookie = Config::$cookieName;
-        $jsData = file_get_contents($templaterJs);
-        $newJs = preg_replace('%let\s*e\=a\(\"\w*\"\)%', "let e=a(\"$nameCookie\")",$jsData);
-        $this->writeInFile($templaterJs, $newJs, 'w');
-
+            //Setting cookie name in templater.js
+        $cac->settingCookieName($templaterJs, $nameCookie, $this);
 
              //Add templater.js in the html
-        $script = "<script src=$scriptTemplater></script>";
-        preg_match('%\<\/body\>%', $htmlData, $m);
-        $htmlData = str_replace($m[0], "$script\n$m[0]", $htmlData);
+        $htmlData = $cac->addScriptBeforeBody($scriptTemplater, $htmlData);
 
             //Getting the html manifest string
         $userManifest = $this->getUserCatalogUrl($userDir).'/.manifest.appcache';
+
 
         if (!empty($this->getCookie($nameCookie))) {
 
@@ -207,9 +191,7 @@ class Render extends Templater
             $htmlDataU = str_replace('<html>', "<html manifest=\"$userManifest\">", $htmlData);
 
                 //Add the file json tag
-            $script = "<script id = \"jsonFile\" type=\"text/x-json\" src=$userJsonUrl></script>";
-            preg_match('%\<script\s*src\=https?\:\/\/\w*.*.js\><\/script\>%', $htmlData, $m);
-            $htmlDataUser = str_replace($m[0], "\n$script\n$m[0]", $htmlDataU);
+            $htmlDataUser = $cac->addScriptJsonFile($userJsonUrl, $htmlData, $htmlDataU);
 
         }
         else {
@@ -271,7 +253,9 @@ class Render extends Templater
      */
     public function getUserCatalogUrl(string $userDir): string
     {
-        return strtolower($this->protocol).'://'.$this->serverName.'/'.$this->cacheDir().'/'.Config::$usersDir.'/'.$userDir;
+        $cacheDir = $this->cacheDir();
+        return (strtolower($this->protocol)).'://'.$this->serverName.'/'
+            .$cacheDir.'/'.Config::$usersDir.'/'.$userDir;
     }
 
 
@@ -303,8 +287,9 @@ class Render extends Templater
      */
     public function cacheDir(): string
     {
-        preg_match('%\w*\/%', Config::$userCache, $m);
-        return str_replace($m[0], '', Config::$userCache);
+        $cache = Config::$userCache;
+        preg_match('%\w*\/%', $cache, $m);
+        return str_replace($m[0], '', $cache);
     }
 
     /**
