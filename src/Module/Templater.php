@@ -87,7 +87,7 @@ abstract class Templater
         $root = $this->getRoot();
 
          //File with paths
-        $this->fileDirs = $root. '/storage/dirs.yaml';
+        $this->fileDirs =  __DIR__.'/../../storage/dirs.yaml';
         $this->manifestPath = $root. '/storage/.manifest.appcache';
         $pars = Yaml::parseFile($this->fileDirs);
 
