@@ -138,7 +138,9 @@ abstract class Templater
 
 
                     //Writing the aliases file data-urls.json in dirs.yaml
-                $aliasesFile = $root.'/'.Config::$userCache.'/pages/aliases/data-urls.json';
+                $aliasesDir = $root.'/'.Config::$userCache.'/pages/aliases';
+                $this->checkAndCreateDir($aliasesDir);
+                $aliasesFile = "$aliasesDir/data-urls.json";
                 $this->checkAndCreateFile($this->jsonPath, $aliasesFile);
                 if (!$pars['dataUrls']) {
                     $this->writeInFile($this->fileDirs, "\ndataUrls : $aliasesFile");
@@ -210,7 +212,15 @@ abstract class Templater
     public function checkAndCreateFile(string $jsonPath, string $fileName): bool
     {
         if (!file_exists($fileName)) {
-            copy($jsonPath, $fileName);
+            try {
+                ;
+                if (!@copy($jsonPath, $fileName)){
+                    throw new \Exception("Problem with create file $fileName. Please reload a page or check your paths.");
+                }
+            }
+            catch (\Exception $e){
+                echo $e->getMessage();
+            }
             return true;
         }
         else {

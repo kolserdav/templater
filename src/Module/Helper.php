@@ -317,7 +317,8 @@ class Helper
         if ($args[$nameVar] == null){
             try {
                 throw new \Exception("Problem with 'for in' syntax in your template file.<br>
-                Construction {%for value in array%}{{value}}{%endfor%} must be in one line located.");
+                Construction {%for value in array%}{{value}}{%endfor%} must be in one line located.
+                Or no data for {{ value }} in render(['value' => parameters]).  ");
             }
             catch (\Exception $e){
                 echo $e->getMessage();

@@ -1,4 +1,6 @@
 **Simple template engine**  
+This component has the ability to cache on the client side, 
+with the availability of visited pages offline.
 
 _Installation_  
 
@@ -17,6 +19,10 @@ _Dependencies_
    },
    "devDependencies": {
      "webpack": "^4.5.0"`
+     
+    
+ Component templater use kolserdav/router module, and working project must be used single point access.
+ For module kolserdav/router settings can be read on: https://github.com/kolserdav/router. 
 
 _Using in template_
 
@@ -29,13 +35,15 @@ At the moment the following structures are supported
 
 {% for value in array %}{{ value }}{% endfor %} //for in, need sent to render(['for_array' => [1,2,3])  
 ``` 
+To enable syntax highlighting in your IDE, you can use the .twig extension.
 
 Construction for in supported using with tags. For example:
 ```
 {% for value in array %}<h3>{{ value }}</h3><br>{% endfor %}
 ```
 
-Bud for correct work name 'value' must be unique for one page.  
+Bud for correct work name 'value' must be unique for one page. 
+And it is written in one line. 
 For example
 ```
 {% for value1 in array_one %}{{ value1 }}{% endfor %}
@@ -55,29 +63,29 @@ use Avir\Templater\Module\Config;
 
 $config = new Config();
 $config->setConfig([
-    'cache' => '/path/cache/catalog/+{pages}' //default : false
-    'userCache' => '/path/usrCache/catalog/+{users}' //default : false
+    'cache' => '/path/cache/catalog/+{pages}' //default : false  {pages} - auto create catalog
+    'userCache' => '/path/usrCache/catalog/+{users}' //default : false {users} - auto create catalog
 ]);
 ```
+
 Require (to include template)
 
 ```php
 use Avir\Templater\Module\Render;
 
-$obj = new Render('/path/template/catalog', '/template.file.php'); 
+$obj = new Render('/path/template/catalog', '/template.file'); 
 $obj->render(
     [
         'first_variabe' => 'string', //{{ key }} 
         'second_variable' => 111,
-        'for_array1' => [1,2,3,4], //arrays need have 'for_' after
+        'for_array1' => [1,2,3,4], //arrays need have 'for_' before
         'for_array2' => [4,3,2,1]
     ],
     [
-        'example_field1' => 'patch.file', //patches repository /template-catalog/views
-        'example_field2' => 'path/patch.file' //patches repository /template-catalog/views/path
+        'field1' => 'patch.file', //patches repository /template-catalog/views
+        'field2' => 'path/patch.file' //patches repository /template-catalog/views/path
         ]);
 ```
-
 
 It works.
 

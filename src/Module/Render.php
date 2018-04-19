@@ -228,7 +228,8 @@ class Render extends Templater
     {
         try{
             if (!@copy($this->tempFile, $fileName)){
-                throw new \Exception("Please check on the path correctness in 'setConfig' function attributes.");
+                throw new \Exception("Please check on the path correctness in 'setConfig' function attributes. Or 
+                create used cache catalog.");
             }
         }
         catch (\Exception $e){
