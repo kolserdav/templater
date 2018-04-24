@@ -258,6 +258,9 @@ class Render extends Templater
      */
     public function getFileName(string $cacheCatalog, string $fileCache): string
     {
+        if ($cacheCatalog === '.'){
+            $cacheCatalog = __DIR__;
+        }
         return $cacheCatalog.'/'.md5($fileCache).'.php';
     }
 }
