@@ -1,6 +1,6 @@
 **Simple template engine**  
 This component has the ability to cache on the client side, 
-with the availability of visited pages offline.
+with the availability of visited pages in offline.
 
 _Installation_  
 
